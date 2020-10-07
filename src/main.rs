@@ -7,12 +7,16 @@ use svg::*;
 use std::fs::File;
 
 fn main() -> std::io::Result<()> {
-    let mut builder = SvgBuilder::new(300, 300);
-    builder.add_line(Line(Point(100, 100), Point(100, 200)), "#d30082", 3);
-    builder.add_line(Line(Point(100, 200), Point(200, 200)), "#d30082", 3);
-    builder.add_line(Line(Point(200, 200), Point(200, 100)), "#d30082", 3);
-    builder.add_line(Line(Point(200, 100), Point(100, 100)), "#d30082", 3);
-
+    let (a, b) = (Point(100.0, 100.0), Point(200.0, 120.0));
+    let t1 = RobinsonTriangle::from_base(a, b, RobinsonTriangleType::Large);
+    let t2 = RobinsonTriangle::from_base(b, a, RobinsonTriangleType::Large);
+    let mut builder = SvgBuilder::new(400, 400);
+    for l in &t1.lines() {
+        builder.add_line(*l, "#000", 2);
+    }
+    for l in &t2.lines() {
+        builder.add_line(*l, "#000", 2);
+    }
     let mut out_file = File::create("out.svg")?;
     builder.build(&mut out_file)?;
     Ok(())

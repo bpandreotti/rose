@@ -25,7 +25,7 @@ impl SvgBuilder {
         self.content += "  ";
         self.content += &format!(
             r#"<line x1="{}" y1="{}" x2="{}" y2="{}" stroke="{}" stroke-width="{}"/>"#,
-            x1, y1, x2, y2, color, stroke_width
+            x1 as u64, y1 as u64, x2 as u64, y2 as u64, color, stroke_width
         );
         self.content += "\n"
     }
