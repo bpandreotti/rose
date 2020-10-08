@@ -54,6 +54,13 @@ impl ops::Sub for Point {
     }
 }
 
+impl ops::Neg for Point {
+    type Output = Self;
+    fn neg(self) -> Self {
+        Point::ZERO - self
+    }
+}
+
 impl ops::Mul<Point> for f64 {
     type Output = Point;
     fn mul(self, rhs: Point) -> Self::Output {

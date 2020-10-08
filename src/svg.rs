@@ -65,9 +65,10 @@ impl SvgBuilder {
             quad.a.0, quad.a.1, quad.b.0, quad.b.1, quad.c.0, quad.c.1, quad.d.0, quad.d.1,
         );
         self.content += &format!(
-            r#"fill="{}" stroke="{}" stroke-width="{}"/>"#,
+            r#"fill="{}" stroke="{}" stroke-width="{}" "#,
             fill_color, stroke_color, stroke_width,
         );
+        self.content += r#"stroke-linecap="round" stroke-linejoin="round" />"#;
         self.content += "\n";
     }
 
