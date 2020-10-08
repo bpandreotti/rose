@@ -44,26 +44,26 @@ impl ops::Add for Point {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
         Point(self.0 + rhs.0, self.1 + rhs.1)
-    }    
+    }
 }
 
 impl ops::Sub for Point {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
         Point(self.0 - rhs.0, self.1 - rhs.1)
-    }    
+    }
 }
 
 impl ops::Mul<Point> for f64 {
     type Output = Point;
     fn mul(self, rhs: Point) -> Self::Output {
         Point(self * rhs.0, self * rhs.1)
-    }    
+    }
 }
 
 impl ops::Div<f64> for Point {
     type Output = Self;
-    
+
     #[allow(clippy::suspicious_arithmetic_impl)] // Trust me, clippy
     fn div(self, rhs: f64) -> Self {
         rhs.recip() * self
@@ -95,7 +95,11 @@ pub struct RobinsonTriangle {
 impl RobinsonTriangle {
     // @TODO: Add proper error handling
     fn infer_triangle_type(a: Point, b: Point, c: Point) -> RobinsonTriangleType {
-        let (ab, bc, ca) = (Line(a, b).length(), Line(b, c).length(), Line(c, a).length());
+        let (ab, bc, ca) = (
+            Line(a, b).length(),
+            Line(b, c).length(),
+            Line(c, a).length(),
+        );
         // Check that it is an isosceles triangle
         assert_close!(ab, bc);
 
@@ -114,7 +118,12 @@ impl RobinsonTriangle {
         RobinsonTriangle { triangle_type, a, b, c }
     }
 
-    pub fn from_base(a: Point, c: Point, triangle_type: RobinsonTriangleType) -> Self {
+    pub fn from_base(
+        a: Point,
+        c: Point,
+        triangle_type: RobinsonTriangleType,
+        clockwise: bool,
+    ) -> Self {
         let ratio = match triangle_type {
             RobinsonTriangleType::Small => PHI,
             RobinsonTriangleType::Large => PHI_INVERSE,
@@ -122,8 +131,13 @@ impl RobinsonTriangle {
         let median = (a + c) / 2.0;
         // Normalized direction vector from the median point to b
         let direction_to_b = {
-            let b_direction = c - a;
-            Point(b_direction.1, -b_direction.0).normalized()
+            let a_to_c = c - a;
+            let d = Point(a_to_c.1, -a_to_c.0).normalized();
+            if !clockwise {
+                Point(-d.0, -d.1)
+            } else {
+                d
+            }
         };
         // Height of the resulting triangle
         let height = {
@@ -132,14 +146,10 @@ impl RobinsonTriangle {
             (hypotenuse.powi(2) - (base_length / 2.0).powi(2)).sqrt()
         };
         let b = median + height * direction_to_b;
-         
+
         // Just to make sure
         assert_eq!(triangle_type, RobinsonTriangle::infer_triangle_type(a, b, c));
         RobinsonTriangle { triangle_type, a, b, c }
-    }
-
-    pub fn lines(&self) -> [Line; 3] {
-        [Line(self.a, self.b), Line(self.b, self.c), Line(self.c, self.a)]
     }
 
     pub fn arc_lines(&self) -> [Line; 2] {
