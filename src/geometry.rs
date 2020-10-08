@@ -4,7 +4,7 @@ use std::ops;
 pub const PHI: f64 = 1.618033988749895;
 pub const PHI_INVERSE: f64 = PHI - 1.0; // == 1 / phi == 0.618033988749895
 
-fn close(a: f64, b: f64) -> bool {
+pub fn close(a: f64, b: f64) -> bool {
     const TOLERANCE: f64 = 1e-5;
     (a - b).abs() < TOLERANCE
 }
@@ -31,6 +31,12 @@ impl Point {
 
     pub fn cross(&self, other: Point) -> f64 {
         self.0 * other.1 - self.1 * other.0
+    }
+
+    pub fn close(&self, other: Point) -> bool {
+        // Since this relation is not transitive, it shouldn't be implemented via the Eq or
+        // ParialEq traits
+        close(self.0, other.0) && close(self.1, other.1)
     }
 }
 
@@ -73,11 +79,7 @@ impl Line {
     }
 }
 
-pub fn is_clockwise_turn(Line(a, b): Line, c: Point) -> bool {
-    // Clockwise with respect to the coordinate system of the svg, that is, positive Y is down
-    (b - a).cross(c - b) > 0.0
-}
-
+#[derive(Debug, PartialEq)]
 pub enum RobinsonTriangleType {
     Small,
     Large,
@@ -91,11 +93,8 @@ pub struct RobinsonTriangle {
 }
 
 impl RobinsonTriangle {
-    // This function could use a better name
-    fn check_invariants(a: Point, b: Point, c: Point) -> RobinsonTriangleType {
-        // Check that the vertices are in the right order
-        // assert!(is_clockwise_turn(Line(a, b), c));
-        
+    // @TODO: Add proper error handling
+    fn infer_triangle_type(a: Point, b: Point, c: Point) -> RobinsonTriangleType {
         let (ab, bc, ca) = (Line(a, b).length(), Line(b, c).length(), Line(c, a).length());
         // Check that it is an isosceles triangle
         assert_close!(ab, bc);
@@ -107,11 +106,11 @@ impl RobinsonTriangle {
             RobinsonTriangleType::Small
         } else {
             panic!()
-        }        
+        }
     }
 
     pub fn new(a: Point, b: Point, c: Point) -> Self {
-        let triangle_type = RobinsonTriangle::check_invariants(a, b, c);
+        let triangle_type = RobinsonTriangle::infer_triangle_type(a, b, c);
         RobinsonTriangle { triangle_type, a, b, c }
     }
 
@@ -133,7 +132,9 @@ impl RobinsonTriangle {
             (hypotenuse.powi(2) - (base_length / 2.0).powi(2)).sqrt()
         };
         let b = median + height * direction_to_b;
-        RobinsonTriangle::check_invariants(a, b, c); // Just to make sure
+         
+        // Just to make sure
+        assert_eq!(triangle_type, RobinsonTriangle::infer_triangle_type(a, b, c));
         RobinsonTriangle { triangle_type, a, b, c }
     }
 
@@ -148,4 +149,16 @@ impl RobinsonTriangle {
         let end_2 = self.c + Line(self.c, start_2).length() * (self.a - self.c).normalized();
         [Line(start_1, end_1), Line(start_2, end_2)]
     }
+
+    /// Returns the median point of the triangle's base.
+    pub fn base_median(&self) -> Point {
+        (self.a + self.c) / 2.0
+    }
+}
+
+pub struct Quadrilateral {
+    pub a: Point,
+    pub b: Point,
+    pub c: Point,
+    pub d: Point,
 }
