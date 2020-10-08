@@ -1,8 +1,8 @@
 use std::ops;
 
 // Unfortunately, Rust doesn't yet allow square roots in constant contexts
-const PHI: f64 = 1.618033988749895;
-const PHI_INVERSE: f64 = PHI - 1.0; // == 1 / phi == 0.618033988749895
+pub const PHI: f64 = 1.618033988749895;
+pub const PHI_INVERSE: f64 = PHI - 1.0; // == 1 / phi == 0.618033988749895
 
 fn close(a: f64, b: f64) -> bool {
     const TOLERANCE: f64 = 1e-5;
@@ -84,17 +84,17 @@ pub enum RobinsonTriangleType {
 }
 
 pub struct RobinsonTriangle {
-    triangle_type: RobinsonTriangleType,
-    a: Point,
-    b: Point,
-    c: Point,
+    pub triangle_type: RobinsonTriangleType,
+    pub a: Point,
+    pub b: Point,
+    pub c: Point,
 }
 
 impl RobinsonTriangle {
     // This function could use a better name
     fn check_invariants(a: Point, b: Point, c: Point) -> RobinsonTriangleType {
         // Check that the vertices are in the right order
-        assert!(is_clockwise_turn(Line(a, b), c));
+        // assert!(is_clockwise_turn(Line(a, b), c));
         
         let (ab, bc, ca) = (Line(a, b).length(), Line(b, c).length(), Line(c, a).length());
         // Check that it is an isosceles triangle
@@ -139,5 +139,13 @@ impl RobinsonTriangle {
 
     pub fn lines(&self) -> [Line; 3] {
         [Line(self.a, self.b), Line(self.b, self.c), Line(self.c, self.a)]
+    }
+
+    pub fn arc_lines(&self) -> [Line; 2] {
+        let start_1 = (self.a + self.b) / 2.0;
+        let end_1 = self.a + Line(self.a, start_1).length() * (self.c - self.a).normalized();
+        let start_2 = (self.c + self.b) / 2.0;
+        let end_2 = self.c + Line(self.c, start_2).length() * (self.a - self.c).normalized();
+        [Line(start_1, end_1), Line(start_2, end_2)]
     }
 }
