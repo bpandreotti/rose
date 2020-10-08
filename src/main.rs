@@ -14,15 +14,13 @@ fn main() -> std::io::Result<()> {
     for _ in 0..7 {
         triangles = tiling::inflate_all(triangles);
     }
-    let colors = ["#399360", "#396c93", "#39938d"].iter().cycle();
     let mut builder = SvgBuilder::new(3000, 3000);
     for t in triangles {
-        for (&l, c) in t.lines().iter().zip(colors.clone()) {
-            builder.add_line(l, c, 2);
-        }
-        let [l1, l2] = t.arc_lines();
-        builder.add_line(l1, "red", 2);
-        builder.add_line(l2, "yellow", 2);
+        let fill_color = match t.triangle_type {
+            RobinsonTriangleType::Large => "#aef26a",
+            RobinsonTriangleType::Small => "#71dd58",
+        };
+        builder.add_robinson_triangle(t, fill_color, "#000", 1, Some(("blue", "red")))
     }
     let mut out_file = File::create("out.svg")?;
     builder.build(&mut out_file)?;
