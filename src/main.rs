@@ -1,3 +1,5 @@
+#[cfg(test)] extern crate rand;
+
 mod geometry;
 mod svg;
 mod tiling;

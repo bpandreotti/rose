@@ -100,3 +100,36 @@ pub fn merge_pairs(mut triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilateral> {
         })
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::Rng;
+
+    fn random_point<R: Rng>(rng: &mut R, min: f64, max: f64) -> Point {
+        let x = rng.gen_range(min, max);
+        let y = rng.gen_range(min, max);
+        Point(x, y)
+    }
+
+    #[test]
+    fn test_merge_pairs() {
+        let mut rng = rand::thread_rng();
+        let triangles = (0..10_000).flat_map(|_| {
+            let p = random_point(&mut rng, 0.0, 1000.0);
+            let q = random_point(&mut rng, 0.0, 1000.0);
+            let triangle_type = if rng.gen() {
+                RobinsonTriangleType::Large
+            } else {
+                RobinsonTriangleType::Small
+            };
+            vec![
+                RobinsonTriangle::from_base(p, q, triangle_type, true),
+                RobinsonTriangle::from_base(p, q, triangle_type, false)
+            ]
+        }).collect::<Vec<_>>();
+        let original_len = triangles.len();
+        let rhombs = merge_pairs(triangles);
+        assert_eq!(original_len, rhombs.len() * 2)
+    }
+}

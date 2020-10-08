@@ -86,7 +86,7 @@ impl Line {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum RobinsonTriangleType {
     Small,
     Large,
@@ -141,7 +141,7 @@ impl RobinsonTriangle {
             let a_to_c = c - a;
             let d = Point(a_to_c.1, -a_to_c.0).normalized();
             if !clockwise {
-                Point(-d.0, -d.1)
+                -d
             } else {
                 d
             }
@@ -179,3 +179,54 @@ pub struct Quadrilateral {
     pub c: Point,
     pub d: Point,
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::Rng;
+
+    // @TODO: This is duplicated
+    fn random_point<R: Rng>(rng: &mut R, min: f64, max: f64) -> Point {
+        let x = rng.gen_range(min, max);
+        let y = rng.gen_range(min, max);
+        Point(x, y)
+    }
+
+    #[test]
+    fn test_point_arithmetic() {
+        let mut rng = rand::thread_rng();
+        for _ in 0..10_000 {
+            let a = random_point(&mut rng, 0.0, 1000.0);
+            assert!(a.close(-(-a)));
+            assert!(a.close(a + Point::ZERO));
+            assert!(a.close(a - Point::ZERO));
+            assert!(a.close(1.0 * a));
+            assert!(a.close(a / 1.0));
+            assert!(Point::ZERO.close(0.0 * a));
+            assert_close!(a.cross(a), 0.0);
+            assert_close!(a.cross(-a), 0.0);
+
+            let b = random_point(&mut rng, 0.0, 1000.0);
+            assert!((a + b).close(b + a));
+            assert!((a - b).close(-(b - a)));
+            assert_close!(a.cross(b), -(b.cross(a)));
+            assert_close!(a.cross(b), -((-a).cross(b)));
+            assert_close!(a.cross(b), (-a).cross(-b));
+        }
+    }
+
+    #[test]
+    fn test_point_distance() {
+        let mut rng = rand::thread_rng();
+        for _ in 0..10_000 {
+            let a = random_point(&mut rng, 0.0, 1000.0);
+            assert_close!(Point::ZERO.distance_to(a.normalized()), 1.0);
+            assert_close!(a.distance_to(a), 0.0);
+
+            let b = random_point(&mut rng, 0.0, 1000.0);
+            assert_close!(a.distance_to(b), b.distance_to(a));
+        }
+    }
+}
+
