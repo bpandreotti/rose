@@ -65,30 +65,14 @@ pub fn merge_pairs(mut triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilateral> {
     // medians, so that two triangles with adjacent bases would be next to each other on the vector.
     // This step is O(n log n). After that it's just an O(n) pass through the vector to find the
     // pairs.
-    triangles.sort_by(|a, b| {
-        use std::cmp::Ordering;
-        let (a, b) = (a.base_median(), b.base_median());
-        if close(a.0, b.0) {
-            if close(a.1, b.1) {
-                Ordering::Equal
-            } else if a.1 > b.1 {
-                Ordering::Greater
-            } else {
-                Ordering::Less
-            }
-        } else if a.0 > b.0 {
-            Ordering::Greater
-        } else {
-            Ordering::Less
-        }
-    });
+    triangles.sort_by(|a, b| Point::compare(a.base_median(), b.base_median()));
     triangles
         .windows(2)
         .filter_map(|ts| {
             let (current, next) = (&ts[0], &ts[1]);
-            if current.base_median().close(next.base_median()) {
+            if close(current.base_median(), next.base_median()) {
                 // If the base medians are the same, then the base vertices should also be the same
-                assert!(current.a.close(next.a) || current.a.close(next.c));
+                assert!(close(current.a, next.a) || close(current.a, next.c));
                 Some(Quadrilateral {
                     a: current.a,
                     b: current.b,
@@ -188,24 +172,7 @@ mod tests {
 
         // We sort here for reasons similar to those in `merge_pairs`
         // We don't care about the edge types for sorting
-        edges.sort_by(|(_, line_a), (_, line_b)| {
-            use std::cmp::Ordering;
-            let (a, b) = (line_a.median(), line_b.median());
-            // @TODO: extract this behaviour to a Point::cmp function
-            if close(a.0, b.0) {
-                if close(a.1, b.1) {
-                    Ordering::Equal
-                } else if a.1 > b.1 {
-                    Ordering::Greater
-                } else {
-                    Ordering::Less
-                }
-            } else if a.0 > b.0 {
-                Ordering::Greater
-            } else {
-                Ordering::Less
-            }
-        });
+        edges.sort_by(|a, b| Point::compare(a.1.median(), b.1.median()));
 
         // Are there any three edges that have the same median?
         for es in edges.windows(3) {
@@ -213,7 +180,9 @@ mod tests {
                 let first_median = first.median();
                 let second_median = second.median();
                 let third_median = third.median();
-                assert!(!(first_median.close(second_median) && second_median.close(third_median)));
+                assert!(
+                    !(close(first_median, second_median) && close(second_median, third_median))
+                );
             } else {
                 unreachable!()
             }
@@ -223,10 +192,10 @@ mod tests {
         for es in edges.windows(2) {
             if let [(current_type, current_line), (next_type, next_line)] = es {
                 let (c_median, n_median) = (current_line.median(), next_line.median());
-                if c_median.close(n_median) {
+                if close(c_median, n_median) {
                     assert_eq!(current_type, next_type);
-                    assert!(current_line.0.close(next_line.0));
-                    assert!(current_line.1.close(next_line.1));
+                    assert_close!(current_line.0, next_line.0);
+                    assert_close!(current_line.1, next_line.1);
                 }
             } else {
                 unreachable!()

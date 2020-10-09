@@ -4,9 +4,20 @@ use std::ops;
 pub const PHI: f64 = 1.618033988749895;
 pub const PHI_INVERSE: f64 = PHI - 1.0; // == 1 / phi == 0.618033988749895
 
-pub fn close(a: f64, b: f64) -> bool {
+// Since this relation is not transitive, it shouldn't be implemented via the Eq or ParialEq traits
+pub trait Close {
     const TOLERANCE: f64 = 1e-5;
-    (a - b).abs() < TOLERANCE
+    fn close(a: Self, b: Self) -> bool;
+}
+
+pub fn close<C: Close>(a: C, b: C) -> bool {
+    Close::close(a, b)
+}
+
+impl Close for f64 {
+    fn close(a: Self, b: Self) -> bool {
+        (a - b).abs() < Self::TOLERANCE
+    }
 }
 
 macro_rules! assert_close {
@@ -33,10 +44,27 @@ impl Point {
         self.0 * other.1 - self.1 * other.0
     }
 
-    pub fn close(&self, other: Point) -> bool {
-        // Since this relation is not transitive, it shouldn't be implemented via the Eq or
-        // ParialEq traits
-        close(self.0, other.0) && close(self.1, other.1)
+    pub fn compare(a: Point, b: Point) -> std::cmp::Ordering {
+        use std::cmp::Ordering;
+        if close(a.0, b.0) {
+            if close(a.1, b.1) {
+                Ordering::Equal
+            } else if a.1 > b.1 {
+                Ordering::Greater
+            } else {
+                Ordering::Less
+            }
+        } else if a.0 > b.0 {
+            Ordering::Greater
+        } else {
+            Ordering::Less
+        }
+    }
+}
+
+impl Close for Point {
+    fn close(a: Self, b: Self) -> bool {
+        Close::close(a.0, b.0) && Close::close(a.1, b.1)
     }
 }
 
@@ -184,7 +212,6 @@ pub struct Quadrilateral {
     pub d: Point,
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -202,18 +229,18 @@ mod tests {
         let mut rng = rand::thread_rng();
         for _ in 0..10_000 {
             let a = random_point(&mut rng, 0.0, 1000.0);
-            assert!(a.close(-(-a)));
-            assert!(a.close(a + Point::ZERO));
-            assert!(a.close(a - Point::ZERO));
-            assert!(a.close(1.0 * a));
-            assert!(a.close(a / 1.0));
-            assert!(Point::ZERO.close(0.0 * a));
+            assert_close!(a, -(-a));
+            assert_close!(a, a + Point::ZERO);
+            assert_close!(a, a - Point::ZERO);
+            assert_close!(a, 1.0 * a);
+            assert_close!(a, a / 1.0);
+            assert_close!(Point::ZERO, 0.0 * a);
             assert_close!(a.cross(a), 0.0);
             assert_close!(a.cross(-a), 0.0);
 
             let b = random_point(&mut rng, 0.0, 1000.0);
-            assert!((a + b).close(b + a));
-            assert!((a - b).close(-(b - a)));
+            assert_close!(a + b, b + a);
+            assert_close!(a - b, -(b - a));
             assert_close!(a.cross(b), -(b.cross(a)));
             assert_close!(a.cross(b), -((-a).cross(b)));
             assert_close!(a.cross(b), (-a).cross(-b));
@@ -233,4 +260,3 @@ mod tests {
         }
     }
 }
-

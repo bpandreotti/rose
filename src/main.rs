@@ -1,6 +1,6 @@
 #[cfg(test)] extern crate rand;
 
-mod geometry;
+#[macro_use] mod geometry;
 mod svg;
 mod tiling;
 
