@@ -122,19 +122,15 @@ mod tests {
 
     #[test]
     fn test_matching_rules() {
-        // Create two rhombuses, a small one from x=0 to x=1000, and a large one next to it,
-        // from x=2000 to x=(2000 + 1000 * phi^2). This is so they are on the same scale.
+        // Create two rhombuses, a small one centered at x=1000, and a large one next to it,
+        // centered at x=4000. They are scaled appropriately.
         let mut triangles = {
-            let (p, q) = (Point::ZERO, Point(1000.0, 0.0));
-            let (r, s) = (2.0 * q, (2.0 + PHI * PHI) * q);
-            vec![
-                // A small rhomb
-                RobinsonTriangle::from_base(p, q, RobinsonTriangleType::Small, true),
-                RobinsonTriangle::from_base(p, q, RobinsonTriangleType::Small, false),
-                // A large rhomb
-                RobinsonTriangle::from_base(r, s, RobinsonTriangleType::Large, true),
-                RobinsonTriangle::from_base(r, s, RobinsonTriangleType::Large, false),
-            ]
+            let mut small = crate::seeds::rhombus(RobinsonTriangleType::Small)
+                .transform(Point(1000.0, 2000.0), 1000.0);
+            let large = crate::seeds::rhombus(RobinsonTriangleType::Large)
+                .transform(Point(4000.0, 2000.0), 1000.0 * PHI * PHI);
+            small.extend(large);
+            small
         };
 
         // Inflate them for eight generations
