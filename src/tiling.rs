@@ -4,6 +4,7 @@ pub fn inflate_all(triangles: Vec<RobinsonTriangle>) -> Vec<RobinsonTriangle> {
     triangles.into_iter().flat_map(inflate).collect()
 }
 
+// @TODO: This should probably be called "decompose"
 pub fn inflate(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
     let RobinsonTriangle { triangle_type, a, b, c } = rt;
     match triangle_type {
@@ -115,21 +116,121 @@ mod tests {
     #[test]
     fn test_merge_pairs() {
         let mut rng = rand::thread_rng();
-        let triangles = (0..10_000).flat_map(|_| {
-            let p = random_point(&mut rng, 0.0, 1000.0);
-            let q = random_point(&mut rng, 0.0, 1000.0);
-            let triangle_type = if rng.gen() {
-                RobinsonTriangleType::Large
-            } else {
-                RobinsonTriangleType::Small
-            };
-            vec![
-                RobinsonTriangle::from_base(p, q, triangle_type, true),
-                RobinsonTriangle::from_base(p, q, triangle_type, false)
-            ]
-        }).collect::<Vec<_>>();
+        let triangles = (0..10_000)
+            .flat_map(|_| {
+                let p = random_point(&mut rng, 0.0, 1000.0);
+                let q = random_point(&mut rng, 0.0, 1000.0);
+                let triangle_type = if rng.gen() {
+                    RobinsonTriangleType::Large
+                } else {
+                    RobinsonTriangleType::Small
+                };
+                vec![
+                    RobinsonTriangle::from_base(p, q, triangle_type, true),
+                    RobinsonTriangle::from_base(p, q, triangle_type, false),
+                ]
+            })
+            .collect::<Vec<_>>();
         let original_len = triangles.len();
         let rhombs = merge_pairs(triangles);
         assert_eq!(original_len, rhombs.len() * 2)
+    }
+
+    #[test]
+    fn test_matching_rules() {
+        // Create two rhombuses, a small one from x=0 to x=1000, and a large one next to it,
+        // from x=2000 to x=(2000 + 1000 * phi^2). This is so they are on the same scale.
+        let mut triangles = {
+            let (p, q) = (Point::ZERO, Point(1000.0, 0.0));
+            let (r, s) = (2.0 * q, (2.0 + PHI * PHI) * q);
+            vec![
+                // A small rhomb
+                RobinsonTriangle::from_base(p, q, RobinsonTriangleType::Small, true),
+                RobinsonTriangle::from_base(p, q, RobinsonTriangleType::Small, false),
+                // A large rhomb
+                RobinsonTriangle::from_base(r, s, RobinsonTriangleType::Large, true),
+                RobinsonTriangle::from_base(r, s, RobinsonTriangleType::Large, false),
+            ]
+        };
+
+        // Inflate them for eight generations
+        for _ in 0..8 {
+            triangles = inflate_all(triangles);
+        }
+
+        #[derive(Debug, PartialEq)]
+        enum EdgeType {
+            Type1,     // Goes from B to A in a small triangle or A to B in a large one
+            Type2,     // Goes from B to C in a small or large triangle
+            SmallBase, // Goes from A to C in a small triangle
+            LargeBase, // Goes from A to C in a large triangle
+        }
+
+        // Split up the triangles into their composing edges
+        let mut edges: Vec<(EdgeType, Line)> = triangles
+            .into_iter()
+            .flat_map(|t| {
+                let RobinsonTriangle { triangle_type, a, b, c } = t;
+                match triangle_type {
+                    RobinsonTriangleType::Small => vec![
+                        (EdgeType::Type1, Line(b, a)),
+                        (EdgeType::Type2, Line(b, c)),
+                        (EdgeType::SmallBase, Line(a, c)),
+                    ],
+                    RobinsonTriangleType::Large => vec![
+                        (EdgeType::Type1, Line(a, b)),
+                        (EdgeType::Type2, Line(b, c)),
+                        (EdgeType::LargeBase, Line(a, c)),
+                    ],
+                }
+            })
+            .collect();
+
+        // We sort here for reasons similar to those in `merge_pairs`
+        // We don't care about the edge types for sorting
+        edges.sort_by(|(_, line_a), (_, line_b)| {
+            use std::cmp::Ordering;
+            let (a, b) = (line_a.median(), line_b.median());
+            // @TODO: extract this behaviour to a Point::cmp function
+            if close(a.0, b.0) {
+                if close(a.1, b.1) {
+                    Ordering::Equal
+                } else if a.1 > b.1 {
+                    Ordering::Greater
+                } else {
+                    Ordering::Less
+                }
+            } else if a.0 > b.0 {
+                Ordering::Greater
+            } else {
+                Ordering::Less
+            }
+        });
+
+        // Are there any three edges that have the same median?
+        for es in edges.windows(3) {
+            if let [(_, first), (_, second), (_, third)] = es {
+                let first_median = first.median();
+                let second_median = second.median();
+                let third_median = third.median();
+                assert!(!(first_median.close(second_median) && second_median.close(third_median)));
+            } else {
+                unreachable!()
+            }
+        }
+
+        // Are there any adjacent edges that have different types or orientations?
+        for es in edges.windows(2) {
+            if let [(current_type, current_line), (next_type, next_line)] = es {
+                let (c_median, n_median) = (current_line.median(), next_line.median());
+                if c_median.close(n_median) {
+                    assert_eq!(current_type, next_type);
+                    assert!(current_line.0.close(next_line.0));
+                    assert!(current_line.1.close(next_line.1));
+                }
+            } else {
+                unreachable!()
+            }
+        }
     }
 }

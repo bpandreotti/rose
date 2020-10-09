@@ -84,6 +84,10 @@ impl Line {
     pub fn length(&self) -> f64 {
         self.0.distance_to(self.1)
     }
+
+    pub fn median(&self) -> Point {
+        (self.0 + self.1) / 2.0
+    }
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
