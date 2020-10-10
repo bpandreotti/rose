@@ -40,10 +40,33 @@ pub fn rose() -> Seed {
     Seed(top_half)
 }
 
-// @TODO: Correct rhombus scale so the side length is always 1.0
 pub fn rhombus(rhombus_type: RobinsonTriangleType) -> Seed {
+    let base_size = match rhombus_type {
+        RobinsonTriangleType::Small => PHI_INVERSE,
+        RobinsonTriangleType::Large => PHI,
+    };
     Seed(vec![
-        RobinsonTriangle::from_base(Point::ZERO, Point(1.0, 0.0), rhombus_type, true),
-        RobinsonTriangle::from_base(Point::ZERO, Point(1.0, 0.0), rhombus_type, false)
+        RobinsonTriangle::from_base(Point::ZERO, Point(base_size, 0.0), rhombus_type, true),
+        RobinsonTriangle::from_base(Point::ZERO, Point(base_size, 0.0), rhombus_type, false)
     ])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_side_length() {
+        let all_seeds = [
+            rose(),
+            rhombus(RobinsonTriangleType::Small),
+            rhombus(RobinsonTriangleType::Large),
+        ];
+        for s in &all_seeds {
+            for t in &s.0 {
+                assert_close!(Line(t.a, t.b).length(), 1.0);
+                assert_close!(Line(t.c, t.b).length(), 1.0);
+            }
+        }
+    }
 }
