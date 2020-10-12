@@ -128,7 +128,7 @@ mod tests {
             let mut small = crate::seeds::rhombus(RobinsonTriangleType::Small)
                 .transform(Point(1000.0, 2000.0), 1000.0);
             let large = crate::seeds::rhombus(RobinsonTriangleType::Large)
-                .transform(Point(4000.0, 2000.0), 1000.0 * PHI * PHI);
+                .transform(Point(4000.0, 2000.0), 1000.0);
             small.extend(large);
             small
         };
