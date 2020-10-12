@@ -212,6 +212,16 @@ pub struct Quadrilateral {
     pub d: Point,
 }
 
+impl Quadrilateral {
+    pub fn quadrilateral_type(&self) -> RobinsonTriangleType {
+        if Line(self.a, self.c).length() > Line(self.b, self.d).length() {
+            RobinsonTriangleType::Large
+        } else {
+            RobinsonTriangleType::Small
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

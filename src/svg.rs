@@ -22,6 +22,7 @@ impl SvgBuilder {
             r#"  <g stroke="{}" stroke-width="{}" stroke-linecap="round" stroke-linejoin="round">"#,
             stroke_color, stroke_width
         );
+        content += "\n";
 
         SvgBuilder { content }
     }
@@ -45,16 +46,29 @@ impl SvgBuilder {
         self.content += "\n";
     }
 
-    pub fn add_quadrilateral(&mut self, quad: Quadrilateral, fill_color: &str) {
-        let path = &format!(
-            "M {} {} L {} {} L {} {} L {} {} Z",
+    pub fn add_all_quads(&mut self, quads: Vec<Quadrilateral>, colors: (&str, &str)) {
+        macro_rules! add_quad_group {
+            ($type:expr, $color:expr) => {
+                self.content += &format!(r#"    <g fill="{}">"#, $color);
+                self.content += "\n";
+                let qs = quads.iter().filter(|q| q.quadrilateral_type() == $type);
+                for q in qs {
+                    self.add_quad(&q)
+                }
+                self.content += "    </g>\n";
+            }
+        }
+        add_quad_group!(RobinsonTriangleType::Small, colors.0);
+        add_quad_group!(RobinsonTriangleType::Large, colors.1);
+    }
+
+    fn add_quad(&mut self, quad: &Quadrilateral) {
+        let points = &format!(
+            "{:.4},{:.4} {:.4},{:.4} {:.4},{:.4} {:.4},{:.4}",
             quad.a.0, quad.a.1, quad.b.0, quad.b.1, quad.c.0, quad.c.1, quad.d.0, quad.d.1
         );
-        self.content += "    ";
-        self.content += &format!(
-            r#"<path d="{}" fill="{}" />"#,
-            path, fill_color
-        );
+        self.content += "      ";
+        self.content += &format!(r#"<polygon points="{}" />"#, points);
         self.content += "\n";
     }
 
