@@ -1,11 +1,19 @@
 use crate::geometry::*;
 
-pub fn inflate_all(triangles: Vec<RobinsonTriangle>) -> Vec<RobinsonTriangle> {
+pub fn generate_tiling(seed: Vec<RobinsonTriangle>, num_generations: u64) -> Vec<Quadrilateral> {
+    let mut triangles = seed;
+    for _ in 0..num_generations {
+        triangles = inflate_all(triangles);
+    }
+    merge_pairs(triangles)
+}
+
+fn inflate_all(triangles: Vec<RobinsonTriangle>) -> Vec<RobinsonTriangle> {
     triangles.into_iter().flat_map(inflate).collect()
 }
 
 // @TODO: This should probably be called "decompose"
-pub fn inflate(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
+fn inflate(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
     let RobinsonTriangle { triangle_type, a, b, c } = rt;
     match triangle_type {
         RobinsonTriangleType::Small => {
@@ -59,7 +67,7 @@ pub fn inflate(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
     }
 }
 
-pub fn merge_pairs(mut triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilateral> {
+fn merge_pairs(mut triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilateral> {
     // We could compare every triangle with every other triangle and check if their bases are
     // adjacent, but that would be O(n^2). Instead, we sort them by the position of their bases'
     // medians, so that two triangles with adjacent bases would be next to each other on the vector.

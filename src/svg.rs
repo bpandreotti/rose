@@ -3,50 +3,42 @@ use crate::geometry::*;
 use std::fs::File;
 use std::io::prelude::*;
 
+pub struct SvgConfig {
+    pub view_box_width: u64,
+    pub view_box_height: u64,
+    pub draw_triangles: bool,
+    pub stroke_width: u64,
+    pub stroke_color: String,
+    pub quad_colors: (String, String),
+    pub arc_colors: Option<(String, String)>,
+}
+
 pub struct SvgBuilder {
+    config: SvgConfig,
     content: String,
 }
 
-// @TODO: Add a proper way to draw the matching arcs
+// @TODO: Draw the arcs and triangle lines depending on config
 impl SvgBuilder {
-    pub fn new(width: u64, height: u64, stroke_color: &str, stroke_width: u64) -> Self {
+    pub fn new(config: SvgConfig) -> Self {
         let mut content = r#"<?xml version="1.0" encoding="utf-8"?>"#.to_string() + "\n";
         content += &format!(
             r#"<svg width="100%" height="100%" viewBox="0 0 {} {}" "#,
-            width, height
+            config.view_box_width, config.view_box_height
         );
         content += r#"preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">"#;
         content += "\n";
 
         content += &format!(
             r#"  <g stroke="{}" stroke-width="{}" stroke-linecap="round" stroke-linejoin="round">"#,
-            stroke_color, stroke_width
+            config.stroke_color, config.stroke_width
         );
         content += "\n";
 
-        SvgBuilder { content }
+        SvgBuilder { config, content }
     }
 
-    pub fn add_line(&mut self, line: Line) {
-        let Line(Point(x1, y1), Point(x2, y2)) = line;
-        self.content += "    ";
-        self.content += &format!(
-            r#"<line x1="{}" y1="{}" x2="{}" y2="{}" />"#,
-            x1, y1, x2, y2
-        );
-        self.content += "\n"
-    }
-
-    pub fn add_robinson_triangle(&mut self, rt: RobinsonTriangle, fill_color: &str) {
-        self.content += "    ";
-        self.content += &format!(
-            r#"<path d="M {} {} L {} {} L {} {}" fill="{}" />"#,
-            rt.a.0, rt.a.1, rt.b.0, rt.b.1, rt.c.0, rt.c.1, fill_color
-        );
-        self.content += "\n";
-    }
-
-    pub fn add_all_quads(&mut self, quads: Vec<Quadrilateral>, colors: (&str, &str)) {
+    pub fn add_all_quads(&mut self, quads: Vec<Quadrilateral>) {
         macro_rules! add_quad_group {
             ($type:expr, $color:expr) => {
                 self.content += &format!(r#"    <g fill="{}">"#, $color);
@@ -56,10 +48,10 @@ impl SvgBuilder {
                     self.add_quad(&q)
                 }
                 self.content += "    </g>\n";
-            }
+            };
         }
-        add_quad_group!(RobinsonTriangleType::Small, colors.0);
-        add_quad_group!(RobinsonTriangleType::Large, colors.1);
+        add_quad_group!(RobinsonTriangleType::Small, self.config.quad_colors.0);
+        add_quad_group!(RobinsonTriangleType::Large, self.config.quad_colors.1);
     }
 
     fn add_quad(&mut self, quad: &Quadrilateral) {
