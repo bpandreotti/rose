@@ -14,9 +14,65 @@ use svg::*;
 use std::fs::File;
 use structopt::StructOpt;
 
+/// Like `clap::arg_enum!`, but allows you to customize the name of the argument associated with
+/// each variant.
+macro_rules! custom_arg_enum {
+    (enum $enum_name:ident { $($variant_name:ident = $variant_value:expr),* $(,)? }) => {
+        #[derive(Debug)]
+        enum $enum_name {
+            $($variant_name),*
+        }
+
+        impl std::str::FromStr for $enum_name {
+            type Err = &'static str;
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                match s {
+                    $( $variant_value => Ok(Self::$variant_name), )*
+                    _ => Err("invalid argument value")
+                }
+            }
+        }
+
+        impl $enum_name {
+            fn variants() -> &'static [&'static str] {
+                &[ $($variant_value),* ]
+            }
+            fn first() -> &'static str { Self::variants()[0] }
+        }
+    }
+}
+
+custom_arg_enum! {
+    enum SeedArgument {
+        Rose = "rose",
+        SmallRhombus = "small-rhombus",
+        LargeRhombus = "large-rhombus",
+    }
+}
+
+custom_arg_enum! {
+    enum ColorSchemeArgument {
+        Orange = "default",
+        Purple = "purple",
+    }
+}
+
 #[derive(StructOpt, Debug)]
 #[structopt(name = "rose")]
-struct SvgArguments {
+struct RoseArguments {
+    #[structopt(short, long, default_value = "6")]
+    num_generations: u64,
+
+    #[structopt(
+        long,
+        possible_values = SeedArgument::variants(),
+        default_value = SeedArgument::first(),
+    )]
+    seed: SeedArgument,
+
+    #[structopt(long)]
+    scale: Option<f64>,
+
     #[structopt(short = "w", long = "width", default_value = "1000")]
     view_box_width: u64,
 
@@ -32,16 +88,21 @@ struct SvgArguments {
     #[structopt(long, default_value = "1")]
     stroke_width: u64,
 
-    #[structopt(short = "s", long, default_value = "default")]
-    color_scheme: String,
+    #[structopt(
+        short = "s",
+        long,
+        possible_values = ColorSchemeArgument::variants(),
+        default_value = ColorSchemeArgument::first(),
+    )]
+    color_scheme: ColorSchemeArgument,
 
-    #[structopt(short, long, value_names=&["first-color", "second-color"])]
+    #[structopt(short, long, value_names = &["first-color", "second-color"])]
     colors: Vec<String>,
 
     #[structopt(long)]
     stroke_color: Option<String>,
 
-    #[structopt(long, value_names=&["first-color", "second-color"])]
+    #[structopt(long, value_names = &["first-color", "second-color"])]
     arc_colors: Vec<String>,
 }
 
@@ -52,9 +113,18 @@ struct ColorScheme {
 }
 
 fn main() -> std::io::Result<()> {
-    let args: SvgArguments = SvgArguments::from_args();
+    let args: RoseArguments = RoseArguments::from_args();
     println!("{:#?}", args);
-    let scheme = get_color_scheme(&args.color_scheme);
+
+    let center = Point(
+        args.view_box_width as f64 / 2.0,
+        args.view_box_height as f64 / 2.0,
+    );
+    let scale = args.scale.unwrap_or(args.view_box_width as f64 / 2.0) ;
+    let seed = get_seed_from_arg(args.seed).transform(center, scale);
+    let quads = tiling::generate_tiling(seed, args.num_generations);
+
+    let scheme = get_color_scheme_from_arg(args.color_scheme);
     let config = SvgConfig {
         view_box_width: args.view_box_width,
         view_box_height: args.view_box_height,
@@ -78,10 +148,6 @@ fn main() -> std::io::Result<()> {
             None
         },
     };
-
-    let seed = seeds::rose().transform(Point(500.0, 500.0), 400.0);
-    let quads = tiling::generate_tiling(seed, 6);
-
     let mut builder = SvgBuilder::new(config);
     builder.add_all_quads(quads);
     let mut out_file = File::create("out.svg")?;
@@ -89,15 +155,28 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-// @TODO: Add error handling in case the name is not a valid color scheme
-fn get_color_scheme(name: &str) -> ColorScheme {
+fn get_color_scheme_from_arg(arg: ColorSchemeArgument) -> ColorScheme {
+    use ColorSchemeArgument::*;
     // @TODO: Add more color schemes
-    match name {
-        "default" => ColorScheme {
+    match arg {
+        Orange => ColorScheme {
             quad_colors: ("#ea4848".into(), "#e8694c".into()),
             stroke_color: "black".into(),
             arc_colors: ("blue".into(), "green".into()),
         },
-        _ => panic!(),
+        Purple => ColorScheme {
+            quad_colors: ("#8447d3".into(), "#9654bc".into()),
+            stroke_color: "white".into(),
+            arc_colors: ("green".into(), "yellow".into()),
+        },
+    }
+}
+
+fn get_seed_from_arg(arg: SeedArgument) -> seeds::Seed {
+    use SeedArgument::*;
+    match arg {
+        Rose => seeds::rose(),
+        SmallRhombus => seeds::rhombus(RobinsonTriangleType::Small),
+        LargeRhombus => seeds::rhombus(RobinsonTriangleType::Large),
     }
 }

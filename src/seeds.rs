@@ -45,9 +45,11 @@ pub fn rhombus(rhombus_type: RobinsonTriangleType) -> Seed {
         RobinsonTriangleType::Small => PHI_INVERSE,
         RobinsonTriangleType::Large => PHI,
     };
+    let right = Point(base_size / 2.0, 0.0);
+    let left = -right;
     Seed(vec![
-        RobinsonTriangle::from_base(Point::ZERO, Point(base_size, 0.0), rhombus_type, true),
-        RobinsonTriangle::from_base(Point::ZERO, Point(base_size, 0.0), rhombus_type, false)
+        RobinsonTriangle::from_base(left, right, rhombus_type, true),
+        RobinsonTriangle::from_base(left, right, rhombus_type, false)
     ])
 }
 
