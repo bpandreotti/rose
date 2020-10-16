@@ -132,7 +132,6 @@ pub struct RobinsonTriangle {
 }
 
 impl RobinsonTriangle {
-    // @TODO: Add proper error handling
     fn infer_triangle_type(a: Point, b: Point, c: Point) -> RobinsonTriangleType {
         let (ab, bc, ca) = (
             Line(a, b).length(),
@@ -226,17 +225,17 @@ impl Quadrilateral {
     }
 }
 
+// Useful for tests
+#[cfg(test)]
+pub fn random_point<R: rand::Rng>(rng: &mut R, min: f64, max: f64) -> Point {
+    let x = rng.gen_range(min, max);
+    let y = rng.gen_range(min, max);
+    Point(x, y)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::Rng;
-
-    // @TODO: This is duplicated
-    fn random_point<R: Rng>(rng: &mut R, min: f64, max: f64) -> Point {
-        let x = rng.gen_range(min, max);
-        let y = rng.gen_range(min, max);
-        Point(x, y)
-    }
 
     #[test]
     fn test_point_arithmetic() {

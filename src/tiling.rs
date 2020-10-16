@@ -3,17 +3,16 @@ use crate::geometry::*;
 pub fn generate_tiling(seed: Vec<RobinsonTriangle>, num_generations: u64) -> Vec<Quadrilateral> {
     let mut triangles = seed;
     for _ in 0..num_generations {
-        triangles = inflate_all(triangles);
+        triangles = decompose_all(triangles);
     }
     merge_pairs(triangles)
 }
 
-fn inflate_all(triangles: Vec<RobinsonTriangle>) -> Vec<RobinsonTriangle> {
-    triangles.into_iter().flat_map(inflate).collect()
+fn decompose_all(triangles: Vec<RobinsonTriangle>) -> Vec<RobinsonTriangle> {
+    triangles.into_iter().flat_map(decompose).collect()
 }
 
-// @TODO: This should probably be called "decompose"
-fn inflate(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
+fn decompose(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
     let RobinsonTriangle { triangle_type, a, b, c } = rt;
     match triangle_type {
         RobinsonTriangleType::Small => {
@@ -97,13 +96,8 @@ fn merge_pairs(mut triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilateral> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::geometry::random_point;
     use rand::Rng;
-
-    fn random_point<R: Rng>(rng: &mut R, min: f64, max: f64) -> Point {
-        let x = rng.gen_range(min, max);
-        let y = rng.gen_range(min, max);
-        Point(x, y)
-    }
 
     #[test]
     fn test_merge_pairs() {
@@ -141,9 +135,9 @@ mod tests {
             small
         };
 
-        // Inflate them for eight generations
+        // Decompose them for eight generations
         for _ in 0..8 {
-            triangles = inflate_all(triangles);
+            triangles = decompose_all(triangles);
         }
 
         #[derive(Debug, PartialEq)]

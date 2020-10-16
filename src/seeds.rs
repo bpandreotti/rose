@@ -16,18 +16,18 @@ impl Seed {
 
 pub fn rose() -> Seed {
     const RAD_TO_DEG: f64 = std::f64::consts::PI / 180.0;
-    let a = Point(1.0, 0.0);
-    let b = Point(f64::cos(36.0 * RAD_TO_DEG), -f64::sin(36.0 * RAD_TO_DEG));
-    let c = Point(f64::cos(72.0 * RAD_TO_DEG), -f64::sin(72.0 * RAD_TO_DEG));
-    let d = Point(-c.0, c.1);
-    let e = Point(-b.0, b.1);
-    let f = -a;
+    let p1 = Point(1.0, 0.0);
+    let p2 = Point(f64::cos(36.0 * RAD_TO_DEG), -f64::sin(36.0 * RAD_TO_DEG));
+    let p3 = Point(f64::cos(72.0 * RAD_TO_DEG), -f64::sin(72.0 * RAD_TO_DEG));
+    let p4 = Point(-p3.0, p3.1);
+    let p5 = Point(-p2.0, p2.1);
+    let p6 = -p1;
     let mut top_half = vec![
-        RobinsonTriangle::new(a, Point::ZERO, b),
-        RobinsonTriangle::new(c, Point::ZERO, b),
-        RobinsonTriangle::new(c, Point::ZERO, d),
-        RobinsonTriangle::new(e, Point::ZERO, d),
-        RobinsonTriangle::new(e, Point::ZERO, f),
+        RobinsonTriangle::new(p1, Point::ZERO, p2),
+        RobinsonTriangle::new(p3, Point::ZERO, p2),
+        RobinsonTriangle::new(p3, Point::ZERO, p4),
+        RobinsonTriangle::new(p5, Point::ZERO, p4),
+        RobinsonTriangle::new(p5, Point::ZERO, p6),
     ];
     let mut bottom_half = top_half
         .iter()

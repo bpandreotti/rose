@@ -3,24 +3,24 @@ use crate::geometry::*;
 use std::fs::File;
 use std::io::prelude::*;
 
-pub struct SvgConfig {
+pub struct SvgConfig<'a> {
     pub view_box_width: u64,
     pub view_box_height: u64,
     pub draw_triangles: bool,
     pub stroke_width: u64,
-    pub stroke_color: String,
-    pub quad_colors: (String, String),
-    pub arc_colors: Option<(String, String)>,
+    pub stroke_color: &'a str,
+    pub quad_colors: (&'a str, &'a str),
+    pub arc_colors: Option<(&'a str, &'a str)>,
 }
 
-pub struct SvgBuilder {
-    config: SvgConfig,
+pub struct SvgBuilder<'a> {
+    config: SvgConfig<'a>,
     content: String,
 }
 
 // @TODO: Draw the triangle lines depending on config
-impl SvgBuilder {
-    pub fn new(config: SvgConfig) -> Self {
+impl<'a> SvgBuilder<'a> {
+    pub fn new(config: SvgConfig<'a>) -> Self {
         let mut content = r#"<?xml version="1.0" encoding="utf-8"?>"#.to_string() + "\n";
         content += &format!(
             r#"<svg width="100%" height="100%" viewBox="0 0 {} {}" "#,
@@ -53,7 +53,7 @@ impl SvgBuilder {
         add_quad_group!(RobinsonTriangleType::Small, self.config.quad_colors.0);
         add_quad_group!(RobinsonTriangleType::Large, self.config.quad_colors.1);
 
-        if let Some((color_1, color_2)) = self.config.arc_colors.clone() {
+        if let Some((color_1, color_2)) = self.config.arc_colors {
             let (arcs_1, arcs_2): (Vec<_>, Vec<_>) = quads.iter().map(Quadrilateral::arcs).unzip();
             self.add_arc_group(arcs_1, &color_1);
             self.add_arc_group(arcs_2, &color_2);

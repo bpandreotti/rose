@@ -34,10 +34,12 @@ macro_rules! custom_arg_enum {
         }
 
         impl $enum_name {
-            fn variants() -> &'static [&'static str] {
+            fn variants() -> &'static [&'static str] { 
                 &[ $($variant_value),* ]
             }
-            fn first() -> &'static str { Self::variants()[0] }
+            fn first() -> &'static str {
+                Self::variants()[0]
+            }
         }
     }
 }
@@ -57,6 +59,7 @@ custom_arg_enum! {
     }
 }
 
+// @TODO: Add some help messages to the command line arguments
 #[derive(StructOpt, Debug)]
 #[structopt(name = "rose")]
 struct RoseArguments {
@@ -107,9 +110,35 @@ struct RoseArguments {
 }
 
 struct ColorScheme {
-    quad_colors: (String, String),
-    stroke_color: String,
-    arc_colors: (String, String),
+    quad_colors: (&'static str, &'static str),
+    stroke_color: &'static str,
+    arc_colors: (&'static str, &'static str),
+}
+
+fn get_color_scheme_from_arg(arg: ColorSchemeArgument) -> ColorScheme {
+    use ColorSchemeArgument::*;
+    // @TODO: Add more color schemes
+    match arg {
+        Orange => ColorScheme {
+            quad_colors: ("#ea4848", "#e8694c"),
+            stroke_color: "black",
+            arc_colors: ("blue", "green"),
+        },
+        Purple => ColorScheme {
+            quad_colors: ("#8447d3", "#9654bc"),
+            stroke_color: "white",
+            arc_colors: ("green", "yellow"),
+        },
+    }
+}
+
+fn get_seed_from_arg(arg: SeedArgument) -> seeds::Seed {
+    use SeedArgument::*;
+    match arg {
+        Rose => seeds::rose(),
+        SmallRhombus => seeds::rhombus(RobinsonTriangleType::Small),
+        LargeRhombus => seeds::rhombus(RobinsonTriangleType::Large),
+    }
 }
 
 fn main() -> std::io::Result<()> {
@@ -129,19 +158,20 @@ fn main() -> std::io::Result<()> {
         view_box_height: args.view_box_height,
         draw_triangles: args.draw_triangles,
         stroke_width: args.stroke_width,
-        stroke_color: args.stroke_color.unwrap_or(scheme.stroke_color),
-
+        
+        // If the user didn't provide new stroke, quad or arc colors, we default to the color
+        // scheme's colors
+        stroke_color: args.stroke_color.as_deref().unwrap_or(scheme.stroke_color),
         quad_colors: if args.colors.is_empty() {
             scheme.quad_colors
         } else {
-            (args.colors[0].clone(), args.colors[1].clone())
+            (&args.colors[0], &args.colors[1])
         },
-
         arc_colors: if args.draw_arcs {
             if args.arc_colors.is_empty() {
                 Some(scheme.arc_colors)
             } else {
-                Some((args.arc_colors[0].clone(), args.arc_colors[1].clone()))
+                Some((&args.arc_colors[0], &args.arc_colors[1]))
             }
         } else {
             None
@@ -152,30 +182,4 @@ fn main() -> std::io::Result<()> {
     let mut out_file = File::create("out.svg")?;
     builder.build(&mut out_file)?;
     Ok(())
-}
-
-fn get_color_scheme_from_arg(arg: ColorSchemeArgument) -> ColorScheme {
-    use ColorSchemeArgument::*;
-    // @TODO: Add more color schemes
-    match arg {
-        Orange => ColorScheme {
-            quad_colors: ("#ea4848".into(), "#e8694c".into()),
-            stroke_color: "black".into(),
-            arc_colors: ("blue".into(), "green".into()),
-        },
-        Purple => ColorScheme {
-            quad_colors: ("#8447d3".into(), "#9654bc".into()),
-            stroke_color: "white".into(),
-            arc_colors: ("green".into(), "yellow".into()),
-        },
-    }
-}
-
-fn get_seed_from_arg(arg: SeedArgument) -> seeds::Seed {
-    use SeedArgument::*;
-    match arg {
-        Rose => seeds::rose(),
-        SmallRhombus => seeds::rhombus(RobinsonTriangleType::Small),
-        LargeRhombus => seeds::rhombus(RobinsonTriangleType::Large),
-    }
 }
