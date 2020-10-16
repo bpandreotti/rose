@@ -18,7 +18,7 @@ pub struct SvgBuilder {
     content: String,
 }
 
-// @TODO: Draw the arcs and triangle lines depending on config
+// @TODO: Draw the triangle lines depending on config
 impl SvgBuilder {
     pub fn new(config: SvgConfig) -> Self {
         let mut content = r#"<?xml version="1.0" encoding="utf-8"?>"#.to_string() + "\n";
@@ -52,6 +52,12 @@ impl SvgBuilder {
         }
         add_quad_group!(RobinsonTriangleType::Small, self.config.quad_colors.0);
         add_quad_group!(RobinsonTriangleType::Large, self.config.quad_colors.1);
+
+        if let Some((color_1, color_2)) = self.config.arc_colors.clone() {
+            let (arcs_1, arcs_2): (Vec<_>, Vec<_>) = quads.iter().map(Quadrilateral::arcs).unzip();
+            self.add_arc_group(arcs_1, &color_1);
+            self.add_arc_group(arcs_2, &color_2);
+        }
     }
 
     fn add_quad(&mut self, quad: &Quadrilateral) {
@@ -61,6 +67,27 @@ impl SvgBuilder {
         );
         self.content += "      ";
         self.content += &format!(r#"<polygon points="{}" />"#, points);
+        self.content += "\n";
+    }
+
+    fn add_arc_group(&mut self, arcs: Vec<Arc>, color: &str) {
+        self.content += &format!(r#"    <g fill="none" stroke="{}">"#, color);
+        self.content += "\n";
+        for a in arcs {
+            self.add_arc(a);
+        }
+        self.content += "    </g>\n";
+    }
+
+    fn add_arc(&mut self, (start, center, end): Arc) {
+        let radius = Line(start, center).length();
+        let sweep_flag = (start - center).cross(end - center) > 0.0;
+        let path = format!(
+            "M {} {} A {} {} 0 0 {} {} {}",
+            start.0, start.1, radius, radius, sweep_flag as u8, end.0, end.1
+        );
+        self.content += "      ";
+        self.content += &format!(r#"<path d="{}" />"#, path);
         self.content += "\n";
     }
 

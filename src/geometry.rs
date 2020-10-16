@@ -172,11 +172,7 @@ impl RobinsonTriangle {
         let direction_to_b = {
             let a_to_c = c - a;
             let d = Point(a_to_c.1, -a_to_c.0).normalized();
-            if !clockwise {
-                -d
-            } else {
-                d
-            }
+            if clockwise { d } else { -d }
         };
         // Height of the resulting triangle
         let height = {
@@ -191,19 +187,13 @@ impl RobinsonTriangle {
         RobinsonTriangle { triangle_type, a, b, c }
     }
 
-    pub fn arc_lines(&self) -> [Line; 2] {
-        let start_1 = (self.a + self.b) / 2.0;
-        let end_1 = self.a + Line(self.a, start_1).length() * (self.c - self.a).normalized();
-        let start_2 = (self.c + self.b) / 2.0;
-        let end_2 = self.c + Line(self.c, start_2).length() * (self.a - self.c).normalized();
-        [Line(start_1, end_1), Line(start_2, end_2)]
-    }
-
     /// Returns the median point of the triangle's base.
     pub fn base_median(&self) -> Point {
         (self.a + self.c) / 2.0
     }
 }
+
+pub type Arc = (Point, Point, Point); // Start, center, end
 
 pub struct Quadrilateral {
     pub a: Point,
@@ -219,6 +209,20 @@ impl Quadrilateral {
         } else {
             RobinsonTriangleType::Small
         }
+    }
+
+    pub fn arcs(&self) -> (Arc, Arc) {
+        let first_arc = (
+            Line(self.a, self.b).median(),
+            self.a,
+            Line(self.a, self.d).median(),
+        );
+        let second_arc = (
+            Line(self.c, self.b).median(),
+            self.c,
+            Line(self.c, self.d).median(),
+        );
+        (first_arc, second_arc)
     }
 }
 

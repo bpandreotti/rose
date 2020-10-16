@@ -83,7 +83,7 @@ struct RoseArguments {
     draw_triangles: bool, // @WIP
 
     #[structopt(short = "a", long)]
-    draw_arcs: bool, // @WIP
+    draw_arcs: bool,
 
     #[structopt(long, default_value = "1")]
     stroke_width: u64,
@@ -114,7 +114,6 @@ struct ColorScheme {
 
 fn main() -> std::io::Result<()> {
     let args: RoseArguments = RoseArguments::from_args();
-    println!("{:#?}", args);
 
     let center = Point(
         args.view_box_width as f64 / 2.0,
