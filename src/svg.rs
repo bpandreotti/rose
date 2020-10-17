@@ -18,7 +18,6 @@ pub struct SvgBuilder<'a> {
     content: String,
 }
 
-// @TODO: Draw the triangle lines depending on config
 impl<'a> SvgBuilder<'a> {
     pub fn new(config: SvgConfig<'a>) -> Self {
         let mut content = r#"<?xml version="1.0" encoding="utf-8"?>"#.to_string() + "\n";
@@ -68,6 +67,15 @@ impl<'a> SvgBuilder<'a> {
         self.content += "      ";
         self.content += &format!(r#"<polygon points="{}" />"#, points);
         self.content += "\n";
+
+        if self.config.draw_triangles {
+            self.content += "      ";
+            self.content += &format!(
+                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" />"#,
+                quad.a.0, quad.a.1, quad.c.0, quad.c.1
+            );
+            self.content += "\n";
+        }
     }
 
     fn add_arc_group(&mut self, arcs: Vec<Arc>, color: &str) {

@@ -83,7 +83,7 @@ struct RoseArguments {
     view_box_height: u64,
 
     #[structopt(short = "t", long)]
-    draw_triangles: bool, // @WIP
+    draw_triangles: bool,
 
     #[structopt(short = "a", long)]
     draw_arcs: bool,
