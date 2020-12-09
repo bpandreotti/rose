@@ -49,7 +49,7 @@ pub fn rhombus(rhombus_type: RobinsonTriangleType) -> Seed {
     let left = -right;
     Seed(vec![
         RobinsonTriangle::from_base(left, right, rhombus_type, true),
-        RobinsonTriangle::from_base(left, right, rhombus_type, false)
+        RobinsonTriangle::from_base(left, right, rhombus_type, false),
     ])
 }
 

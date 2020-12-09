@@ -7,16 +7,16 @@ pub const PHI_INVERSE: f64 = PHI - 1.0; // == 1 / phi == 0.618033988749895
 // Since this relation is not transitive, it shouldn't be implemented via the Eq or ParialEq traits
 pub trait Close {
     const TOLERANCE: f64 = 1e-5;
-    fn close(a: Self, b: Self) -> bool;
+    fn is_close(&self, b: &Self) -> bool;
 }
 
 pub fn close<C: Close>(a: C, b: C) -> bool {
-    Close::close(a, b)
+    a.is_close(&b)
 }
 
 impl Close for f64 {
-    fn close(a: Self, b: Self) -> bool {
-        (a - b).abs() < Self::TOLERANCE
+    fn is_close(&self, b: &Self) -> bool {
+        (self - b).abs() < Self::TOLERANCE
     }
 }
 
@@ -63,8 +63,8 @@ impl Point {
 }
 
 impl Close for Point {
-    fn close(a: Self, b: Self) -> bool {
-        Close::close(a.0, b.0) && Close::close(a.1, b.1)
+    fn is_close(&self, b: &Self) -> bool {
+        self.0.is_close(&b.0) && self.1.is_close(&b.1)
     }
 }
 

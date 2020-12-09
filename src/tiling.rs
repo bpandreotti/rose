@@ -36,8 +36,6 @@ fn decompose(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
         RobinsonTriangleType::Large => {
             // The large triangle will be divided in three: two large EDA and CEB triangles, and a
             // small DEB triangle.
-            // ce = ca / phi^2
-            // bd = ba / phi^2
             //     A
             //     |\
             //     | \
@@ -169,7 +167,6 @@ mod tests {
             .collect();
 
         // We sort here for reasons similar to those in `merge_pairs`
-        // We don't care about the edge types for sorting
         edges.sort_by(|a, b| Point::compare(a.1.median(), b.1.median()));
 
         // Are there any three edges that have the same median?
