@@ -46,26 +46,30 @@ macro_rules! custom_arg_enum {
 
 custom_arg_enum! {
     enum SeedArgument {
-        Rose = "rose",
-        SmallRhombus = "small-rhombus",
         LargeRhombus = "large-rhombus",
+        SmallRhombus = "small-rhombus",
+        Rose = "rose",
     }
 }
 
 custom_arg_enum! {
     enum ColorSchemeArgument {
-        Orange = "default",
+        Orange = "orange",
         Purple = "purple",
     }
 }
 
-// @TODO: Add some help messages to the command line arguments
+// @TODO: Add an output file argument
 #[derive(StructOpt, Debug)]
-#[structopt(name = "rose")]
+#[structopt(name = "rose", about = "A Penrose tiling generator")]
 struct RoseArguments {
+    /// Number of decomposition steps. A larger value results in more, smaller tiles. CAUTION:
+    /// values larger than 10 may take a long time to run, and will result in a very large SVG file
     #[structopt(short, long, default_value = "6")]
     num_generations: u64,
 
+    /// Seed to use for generating the tiling. Some seeds may result in tilings that look right, but
+    /// aren't actual Penrose tilings
     #[structopt(
         long,
         possible_values = SeedArgument::variants(),
@@ -73,24 +77,34 @@ struct RoseArguments {
     )]
     seed: SeedArgument,
 
+    /// Set a custom scale for the tiling. This number represents the side length of a rhombus
+    /// before any decomposition, in SVG units. By default, the scale is half of the view box width
     #[structopt(long)]
     scale: Option<f64>,
 
-    #[structopt(short = "w", long = "width", default_value = "1000")]
-    view_box_width: u64,
-
+    // @TODO: Should I change the height/width arguments shorthand form to '-y' and '-x', to allow
+    // '-h' to mean '--help'? Or maybe just remove their shothand form all together?
+    /// Set the SVG view box height
     #[structopt(short = "h", long = "height", default_value = "1000")]
     view_box_height: u64,
 
+    /// Set the SVG view box width
+    #[structopt(short = "w", long = "width", default_value = "1000")]
+    view_box_width: u64,
+
+    /// Draw each rhombus as two triangles
     #[structopt(short = "t", long)]
     draw_triangles: bool,
 
+    /// Draw the matching arcs on the rhombuses
     #[structopt(short = "a", long)]
     draw_arcs: bool,
 
+    /// Set the stroke width for the SVG, in SVG units
     #[structopt(long, default_value = "1")]
     stroke_width: u64,
 
+    /// Set which color scheme to use
     #[structopt(
         short = "s",
         long,
@@ -99,13 +113,17 @@ struct RoseArguments {
     )]
     color_scheme: ColorSchemeArgument,
 
+    /// Override the color scheme fill colors. Expects two valid CSS colors
     #[structopt(short, long, value_names = &["first-color", "second-color"])]
     colors: Vec<String>,
 
+    /// Override the color scheme stroke color. Expects a valid CSS color
     #[structopt(long)]
     stroke_color: Option<String>,
 
-    #[structopt(long, value_names = &["first-color", "second-color"])]
+    /// Set custom colors for the matching arcs. Expects two valid CSS colors. Can only be used if
+    /// the "--draw-arcs" flag was set.
+    #[structopt(long, requires = "draw-arcs", value_names = &["first-color", "second-color"])]
     arc_colors: Vec<String>,
 }
 
@@ -148,7 +166,7 @@ fn main() -> std::io::Result<()> {
         args.view_box_width as f64 / 2.0,
         args.view_box_height as f64 / 2.0,
     );
-    let scale = args.scale.unwrap_or(args.view_box_width as f64 / 2.0) ;
+    let scale = args.scale.unwrap_or(args.view_box_width as f64 / 2.0);
     let seed = get_seed_from_arg(args.seed).transform(center, scale);
     let quads = tiling::generate_tiling(seed, args.num_generations);
 
