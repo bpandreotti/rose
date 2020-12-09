@@ -54,7 +54,9 @@ custom_arg_enum! {
 
 custom_arg_enum! {
     enum ColorSchemeArgument {
-        Orange = "orange",
+        Red = "red",
+        Green = "green",
+        Blue = "blue",
         Purple = "purple",
     }
 }
@@ -81,14 +83,12 @@ struct RoseArguments {
     #[structopt(long)]
     scale: Option<f64>,
 
-    // @TODO: Should I change the height/width arguments shorthand form to '-y' and '-x', to allow
-    // '-h' to mean '--help'? Or maybe just remove their shothand form all together?
     /// Set the SVG view box height
-    #[structopt(short = "h", long = "height", default_value = "1000")]
+    #[structopt(long = "height", default_value = "1000")]
     view_box_height: u64,
 
     /// Set the SVG view box width
-    #[structopt(short = "w", long = "width", default_value = "1000")]
+    #[structopt(long = "width", default_value = "1000")]
     view_box_width: u64,
 
     /// Draw each rhombus as two triangles
@@ -138,15 +138,24 @@ struct ColorScheme {
 
 fn get_color_scheme_from_arg(arg: ColorSchemeArgument) -> ColorScheme {
     use ColorSchemeArgument::*;
-    // @TODO: Add more color schemes
     match arg {
-        Orange => ColorScheme {
-            quad_colors: ("#ea4848", "#e8694c"),
-            stroke_color: "black",
-            arc_colors: ("blue", "green"),
+        Red => ColorScheme {
+            quad_colors: ("#97332b", "#c05150"),
+            stroke_color: "white",
+            arc_colors: ("green", "cyan"),
+        },
+        Green => ColorScheme {
+            quad_colors: ("#2c6e49", "#4c956c"),
+            stroke_color: "white",
+            arc_colors: ("red", "magenta"),
+        },
+        Blue => ColorScheme {
+            quad_colors: ("#1f4a77", "#416d9f"),
+            stroke_color: "white",
+            arc_colors: ("red", "orange"),
         },
         Purple => ColorScheme {
-            quad_colors: ("#8447d3", "#9654bc"),
+            quad_colors: ("#674593", "#915eae"),
             stroke_color: "white",
             arc_colors: ("green", "yellow"),
         },
