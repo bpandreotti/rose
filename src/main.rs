@@ -59,7 +59,6 @@ custom_arg_enum! {
     }
 }
 
-// @TODO: Add an output file argument
 #[derive(StructOpt, Debug)]
 #[structopt(name = "rose", about = "A Penrose tiling generator")]
 struct RoseArguments {
@@ -125,6 +124,10 @@ struct RoseArguments {
     /// the "--draw-arcs" flag was set.
     #[structopt(long, requires = "draw-arcs", value_names = &["first-color", "second-color"])]
     arc_colors: Vec<String>,
+
+    /// Output file
+    #[structopt(required = true)]
+    output_file: String,
 }
 
 struct ColorScheme {
@@ -197,7 +200,7 @@ fn main() -> std::io::Result<()> {
     };
     let mut builder = SvgBuilder::new(config);
     builder.add_all_quads(quads);
-    let mut out_file = File::create("out.svg")?;
+    let mut out_file = File::create(args.output_file)?;
     builder.build(&mut out_file)?;
     Ok(())
 }
