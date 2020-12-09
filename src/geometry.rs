@@ -3,6 +3,7 @@ use std::ops;
 // Unfortunately, Rust doesn't yet allow square roots in constant contexts
 pub const PHI: f64 = 1.618033988749895;
 pub const PHI_INVERSE: f64 = PHI - 1.0; // == 1 / phi == 0.618033988749895
+pub const DEG_TO_RAD: f64 = std::f64::consts::PI / 180.0;
 
 // Since this relation is not transitive, it shouldn't be implemented via the Eq or ParialEq traits
 pub trait Close {
@@ -24,6 +25,12 @@ macro_rules! assert_close {
     ($a:expr, $b:expr $(,)?) => {
         assert!(close($a, $b))
     };
+}
+
+pub trait Transform: Sized {
+    fn rotate(&self, angle: f64) -> Self;
+    fn mirror_x(&self) -> Self;
+    fn mirror_y(&self) -> Self;
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -65,6 +72,23 @@ impl Point {
 impl Close for Point {
     fn is_close(&self, b: &Self) -> bool {
         self.0.is_close(&b.0) && self.1.is_close(&b.1)
+    }
+}
+
+// @TODO: Add tests for `Transform` trait
+impl Transform for Point {
+    fn rotate(&self, angle: f64) -> Self {
+        let cos = f64::cos(DEG_TO_RAD * angle);
+        let sin = f64::sin(DEG_TO_RAD * angle);
+        Point(self.0 * cos - self.1 * sin, self.0 * sin + self.1 * cos)
+    }
+
+    fn mirror_x(&self) -> Self {
+        Point(-self.0, self.1)
+    }
+
+    fn mirror_y(&self) -> Self {
+        Point(self.0, -self.1)
     }
 }
 
@@ -190,6 +214,24 @@ impl RobinsonTriangle {
     /// Returns the median point of the triangle's base.
     pub fn base_median(&self) -> Point {
         (self.a + self.c) / 2.0
+    }
+}
+
+impl Transform for RobinsonTriangle {
+    fn rotate(&self, angle: f64) -> Self {
+        RobinsonTriangle::new(
+            self.a.rotate(angle),
+            self.b.rotate(angle),
+            self.c.rotate(angle),
+        )
+    }
+
+    fn mirror_x(&self) -> Self {
+        RobinsonTriangle::new(self.a.mirror_x(), self.b.mirror_x(), self.c.mirror_x())
+    }
+
+    fn mirror_y(&self) -> Self {
+        RobinsonTriangle::new(self.a.mirror_y(), self.b.mirror_y(), self.c.mirror_y())
     }
 }
 
