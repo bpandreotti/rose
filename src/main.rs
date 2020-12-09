@@ -46,9 +46,10 @@ macro_rules! custom_arg_enum {
 
 custom_arg_enum! {
     enum SeedArgument {
+        Rose = "rose",
         LargeRhombus = "large-rhombus",
         SmallRhombus = "small-rhombus",
-        Rose = "rose",
+        Pizza = "pizza",
     }
 }
 
@@ -91,6 +92,8 @@ struct RoseArguments {
     #[structopt(long = "width", default_value = "1000")]
     view_box_width: u64,
 
+    // @TODO: Make 'draw-triangles' flag actually skip the merging step, so triangles that would
+    // have failed to merge are actually rendered
     /// Draw each rhombus as two triangles
     #[structopt(short = "t", long)]
     draw_triangles: bool,
@@ -166,8 +169,9 @@ fn get_seed_from_arg(arg: SeedArgument) -> seeds::Seed {
     use SeedArgument::*;
     match arg {
         Rose => seeds::rose(),
-        SmallRhombus => seeds::rhombus(RobinsonTriangleType::Small),
         LargeRhombus => seeds::rhombus(RobinsonTriangleType::Large),
+        SmallRhombus => seeds::rhombus(RobinsonTriangleType::Small),
+        Pizza => seeds::pizza(),
     }
 }
 

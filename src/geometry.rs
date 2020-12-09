@@ -124,6 +124,7 @@ pub enum RobinsonTriangleType {
     Large,
 }
 
+#[derive(Clone)]
 pub struct RobinsonTriangle {
     pub triangle_type: RobinsonTriangleType,
     pub a: Point,
