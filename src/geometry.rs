@@ -8,7 +8,7 @@ pub const DEG_TO_RAD: f64 = std::f64::consts::PI / 180.0;
 // Since this relation is not transitive, it shouldn't be implemented via the Eq or ParialEq traits
 pub trait Close {
     const TOLERANCE: f64 = 1e-5;
-    fn is_close(&self, b: &Self) -> bool;
+    fn is_close(&self, other: &Self) -> bool;
 }
 
 pub fn close<C: Close>(a: C, b: C) -> bool {
@@ -16,8 +16,8 @@ pub fn close<C: Close>(a: C, b: C) -> bool {
 }
 
 impl Close for f64 {
-    fn is_close(&self, b: &Self) -> bool {
-        (self - b).abs() < Self::TOLERANCE
+    fn is_close(&self, other: &Self) -> bool {
+        (self - other).abs() < Self::TOLERANCE
     }
 }
 
@@ -70,8 +70,8 @@ impl Point {
 }
 
 impl Close for Point {
-    fn is_close(&self, b: &Self) -> bool {
-        self.0.is_close(&b.0) && self.1.is_close(&b.1)
+    fn is_close(&self, other: &Self) -> bool {
+        self.0.is_close(&other.0) && self.1.is_close(&other.1)
     }
 }
 
@@ -218,8 +218,8 @@ impl RobinsonTriangle {
 }
 
 impl Close for RobinsonTriangle {
-    fn is_close(&self, b: &Self) -> bool {
-        close(self.a, b.a) && close(self.b, b.b) && close(self.c, b.c)
+    fn is_close(&self, other: &Self) -> bool {
+        close(self.a, other.a) && close(self.b, other.b) && close(self.c, other.c)
     }
 }
 
@@ -276,7 +276,7 @@ mod tests {
     fn test_point_arithmetic() {
         let mut rng = rand::thread_rng();
         for _ in 0..10_000 {
-            let a = random_point(&mut rng, 0.0, 1000.0);
+            let a = random_point(&mut rng, -1000.0, 1000.0);
             assert_close!(a, -(-a));
             assert_close!(a, a + Point::ZERO);
             assert_close!(a, a - Point::ZERO);
@@ -286,7 +286,7 @@ mod tests {
             assert_close!(a.cross(a), 0.0);
             assert_close!(a.cross(-a), 0.0);
 
-            let b = random_point(&mut rng, 0.0, 1000.0);
+            let b = random_point(&mut rng, -1000.0, 1000.0);
             assert_close!(a + b, b + a);
             assert_close!(a - b, -(b - a));
             assert_close!(a.cross(b), -(b.cross(a)));
@@ -299,11 +299,11 @@ mod tests {
     fn test_point_distance() {
         let mut rng = rand::thread_rng();
         for _ in 0..10_000 {
-            let a = random_point(&mut rng, 0.0, 1000.0);
+            let a = random_point(&mut rng, -1000.0, 1000.0);
             assert_close!(Point::ZERO.distance_to(a.normalized()), 1.0);
             assert_close!(a.distance_to(a), 0.0);
 
-            let b = random_point(&mut rng, 0.0, 1000.0);
+            let b = random_point(&mut rng, -1000.0, 1000.0);
             assert_close!(a.distance_to(b), b.distance_to(a));
         }
     }

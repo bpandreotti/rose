@@ -102,8 +102,8 @@ mod tests {
         let mut rng = rand::thread_rng();
         let triangles = (0..10_000)
             .flat_map(|_| {
-                let p = random_point(&mut rng, 0.0, 1000.0);
-                let q = random_point(&mut rng, 0.0, 1000.0);
+                let p = random_point(&mut rng, -1000.0, 1000.0);
+                let q = random_point(&mut rng, -1000.0, 1000.0);
                 let triangle_type = if rng.gen() {
                     RobinsonTriangleType::Large
                 } else {
