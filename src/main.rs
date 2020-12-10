@@ -59,6 +59,8 @@ custom_arg_enum! {
         Green = "green",
         Blue = "blue",
         Purple = "purple",
+        Grey = "grey",
+        Yellow = "yellow",
     }
 }
 
@@ -143,23 +145,33 @@ fn get_color_scheme_from_arg(arg: ColorSchemeArgument) -> ColorScheme {
         Red => ColorScheme {
             quad_colors: ("#97332b", "#c05150"),
             stroke_color: "white",
-            arc_colors: ("green", "cyan"),
+            arc_colors: ("#50d35b", "#30bbe5"),
         },
         Green => ColorScheme {
             quad_colors: ("#2c6e49", "#4c956c"),
             stroke_color: "white",
-            arc_colors: ("red", "magenta"),
+            arc_colors: ("#d17432", "#8d31ce"),
         },
         Blue => ColorScheme {
             quad_colors: ("#1f4a77", "#416d9f"),
             stroke_color: "white",
-            arc_colors: ("red", "orange"),
+            arc_colors: ("#d13232", "#a9d132"),
         },
         Purple => ColorScheme {
             quad_colors: ("#674593", "#915eae"),
             stroke_color: "white",
-            arc_colors: ("green", "yellow"),
+            arc_colors: ("#a9d132", "#d17432"),
         },
+        Grey => ColorScheme {
+            quad_colors: ("#404040", "#545454"),
+            stroke_color: "white",
+            arc_colors: ("black", "#202020"),
+        },
+        Yellow => ColorScheme {
+            quad_colors: ("#e0be4e", "#f9d96d"),
+            stroke_color: "#9b6a01",
+            arc_colors: ("#4e5de0", "#884ee0"),
+        }
     }
 }
 
