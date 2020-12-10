@@ -217,6 +217,12 @@ impl RobinsonTriangle {
     }
 }
 
+impl Close for RobinsonTriangle {
+    fn is_close(&self, b: &Self) -> bool {
+        close(self.a, b.a) && close(self.b, b.b) && close(self.c, b.c)
+    }
+}
+
 impl Transform for RobinsonTriangle {
     fn rotate(&self, angle: f64) -> Self {
         RobinsonTriangle::new(
@@ -299,6 +305,46 @@ mod tests {
 
             let b = random_point(&mut rng, 0.0, 1000.0);
             assert_close!(a.distance_to(b), b.distance_to(a));
+        }
+    }
+
+    fn run_transform_tests<T: Transform + Close + Clone, R: rand::Rng>(obj: &T, rng: &mut R) {
+        assert_close!(obj.mirror_x().mirror_x(), obj.clone());
+        assert_close!(obj.mirror_y().mirror_y(), obj.clone());
+        assert_close!(obj.mirror_x().mirror_y(), obj.mirror_y().mirror_x());
+        assert_close!(obj.mirror_x().mirror_y(), obj.rotate(180.0));
+        assert_close!(obj.rotate(0.0), obj.clone());
+        assert_close!(obj.rotate(360.0), obj.clone());
+        let x = rng.gen_range(0.0, 360.0);
+        assert_close!(obj.rotate(x).rotate(x), obj.rotate(2.0 * x));
+        assert_close!(obj.rotate(x).rotate(-x), obj.clone());
+    }
+
+    #[test]
+    fn test_point_transform() {
+        let mut rng = rand::thread_rng();
+        for _ in 0..10_000 {
+            let a = random_point(&mut rng, -1000.0, 1000.0);
+            run_transform_tests(&a, &mut rng);
+        }
+    }
+
+    #[test]
+    fn test_triangle_transform() {
+        let mut rng = rand::thread_rng();
+        for _ in 0..10_000 {
+            let a = random_point(&mut rng, -1000.0, 1000.0);
+            let c = random_point(&mut rng, -1000.0, 1000.0);
+            use RobinsonTriangleType::*;
+            let triangles = [
+                RobinsonTriangle::from_base(a, c, Small, false),
+                RobinsonTriangle::from_base(a, c, Large, false),
+                RobinsonTriangle::from_base(a, c, Small, true),
+                RobinsonTriangle::from_base(a, c, Large, true),
+            ];
+            for t in &triangles {
+                run_transform_tests(t, &mut rng);
+            }
         }
     }
 }
