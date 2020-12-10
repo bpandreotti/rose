@@ -1,11 +1,38 @@
 use crate::geometry::*;
 
-pub fn generate_tiling(seed: Vec<RobinsonTriangle>, num_generations: u64) -> Vec<Quadrilateral> {
+pub fn generate_tiling(seed: Vec<RobinsonTriangle>, num_generations: u64) -> Vec<RobinsonTriangle> {
     let mut triangles = seed;
     for _ in 0..num_generations {
         triangles = decompose_all(triangles);
     }
-    merge_pairs(triangles)
+    triangles
+}
+
+pub fn merge_pairs(mut triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilateral> {
+    // We could compare every triangle with every other triangle and check if their bases are
+    // adjacent, but that would be O(n^2). Instead, we sort them by the position of their bases'
+    // medians, so that two triangles with adjacent bases would be next to each other on the vector.
+    // This step is O(n log n). After that it's just an O(n) pass through the vector to find the
+    // pairs.
+    triangles.sort_by(|a, b| Point::compare(a.base_median(), b.base_median()));
+    triangles
+        .windows(2)
+        .filter_map(|ts| {
+            let (current, next) = (&ts[0], &ts[1]);
+            if close(current.base_median(), next.base_median()) {
+                // If the base medians are the same, then the base vertices should also be the same
+                assert!(close(current.a, next.a) || close(current.a, next.c));
+                Some(Quadrilateral {
+                    a: current.a,
+                    b: current.b,
+                    c: current.c,
+                    d: next.b,
+                })
+            } else {
+                None
+            }
+        })
+        .collect()
 }
 
 fn decompose_all(triangles: Vec<RobinsonTriangle>) -> Vec<RobinsonTriangle> {
@@ -62,33 +89,6 @@ fn decompose(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
             ]
         }
     }
-}
-
-fn merge_pairs(mut triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilateral> {
-    // We could compare every triangle with every other triangle and check if their bases are
-    // adjacent, but that would be O(n^2). Instead, we sort them by the position of their bases'
-    // medians, so that two triangles with adjacent bases would be next to each other on the vector.
-    // This step is O(n log n). After that it's just an O(n) pass through the vector to find the
-    // pairs.
-    triangles.sort_by(|a, b| Point::compare(a.base_median(), b.base_median()));
-    triangles
-        .windows(2)
-        .filter_map(|ts| {
-            let (current, next) = (&ts[0], &ts[1]);
-            if close(current.base_median(), next.base_median()) {
-                // If the base medians are the same, then the base vertices should also be the same
-                assert!(close(current.a, next.a) || close(current.a, next.c));
-                Some(Quadrilateral {
-                    a: current.a,
-                    b: current.b,
-                    c: current.c,
-                    d: next.b,
-                })
-            } else {
-                None
-            }
-        })
-        .collect()
 }
 
 #[cfg(test)]

@@ -252,20 +252,6 @@ impl Quadrilateral {
             RobinsonTriangleType::Small
         }
     }
-
-    pub fn arcs(&self) -> (Arc, Arc) {
-        let first_arc = (
-            Line(self.a, self.b).median(),
-            self.a,
-            Line(self.a, self.d).median(),
-        );
-        let second_arc = (
-            Line(self.c, self.b).median(),
-            self.c,
-            Line(self.c, self.d).median(),
-        );
-        (first_arc, second_arc)
-    }
 }
 
 // Useful for tests

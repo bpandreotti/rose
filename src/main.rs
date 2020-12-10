@@ -92,8 +92,6 @@ struct RoseArguments {
     #[structopt(long = "width", default_value = "1000")]
     view_box_width: u64,
 
-    // @TODO: Make 'draw-triangles' flag actually skip the merging step, so triangles that would
-    // have failed to merge are actually rendered
     /// Draw each rhombus as two triangles
     #[structopt(short = "t", long)]
     draw_triangles: bool,
@@ -178,19 +176,10 @@ fn get_seed_from_arg(arg: SeedArgument) -> seeds::Seed {
 fn main() -> std::io::Result<()> {
     let args: RoseArguments = RoseArguments::from_args();
 
-    let center = Point(
-        args.view_box_width as f64 / 2.0,
-        args.view_box_height as f64 / 2.0,
-    );
-    let scale = args.scale.unwrap_or(args.view_box_width as f64 / 2.0);
-    let seed = get_seed_from_arg(args.seed).transform(center, scale);
-    let quads = tiling::generate_tiling(seed, args.num_generations);
-
     let scheme = get_color_scheme_from_arg(args.color_scheme);
     let config = SvgConfig {
         view_box_width: args.view_box_width,
         view_box_height: args.view_box_height,
-        draw_triangles: args.draw_triangles,
         stroke_width: args.stroke_width,
         
         // If the user didn't provide new stroke, quad or arc colors, we default to the color
@@ -212,7 +201,20 @@ fn main() -> std::io::Result<()> {
         },
     };
     let mut builder = SvgBuilder::new(config);
-    builder.add_all_quads(quads);
+
+    let center = Point(
+        args.view_box_width as f64 / 2.0,
+        args.view_box_height as f64 / 2.0,
+    );
+    let scale = args.scale.unwrap_or(args.view_box_width as f64 / 2.0);
+    let seed = get_seed_from_arg(args.seed).transform(center, scale);
+    let triangles = tiling::generate_tiling(seed, args.num_generations);
+    if args.draw_triangles {
+        builder.add_all_polygons(triangles);
+    } else {
+        let quads = tiling::merge_pairs(triangles);
+        builder.add_all_polygons(quads);
+    }
     let mut out_file = File::create(args.output_file)?;
     builder.build(&mut out_file)?;
     Ok(())

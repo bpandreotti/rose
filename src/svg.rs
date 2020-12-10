@@ -3,10 +3,73 @@ use crate::geometry::*;
 use std::fs::File;
 use std::io::prelude::*;
 
+pub trait SvgPolygon {
+    fn polygon_type(&self) -> RobinsonTriangleType;
+    fn points_string(&self) -> String;
+    fn arcs(&self) -> (Arc, Arc);
+}
+
+impl SvgPolygon for RobinsonTriangle {
+    fn polygon_type(&self) -> RobinsonTriangleType {
+        self.triangle_type
+    }
+
+    fn points_string(&self) -> String {
+        format!(
+            "{:.4},{:.4} {:.4},{:.4} {:.4},{:.4}",
+            self.a.0, self.a.1, self.b.0, self.b.1, self.c.0, self.c.1,
+        )
+    }
+
+    fn arcs(&self) -> (Arc, Arc) {
+        let ratio = match self.triangle_type {
+            RobinsonTriangleType::Small => PHI,
+            RobinsonTriangleType::Large => PHI_INVERSE,
+        };
+        let first_arc = (
+            Line(self.a, self.b).median(),
+            self.a,
+            self.a + 0.5 * ratio * (self.c - self.a),
+        );
+        let second_arc = (
+            Line(self.c, self.b).median(),
+            self.c,
+            self.c + 0.5 * ratio * (self.a - self.c),
+        );
+        (first_arc, second_arc)
+    }
+}
+
+impl SvgPolygon for Quadrilateral {
+    fn polygon_type(&self) -> RobinsonTriangleType {
+        self.quadrilateral_type()
+    }
+
+    fn points_string(&self) -> String {
+        format!(
+            "{:.4},{:.4} {:.4},{:.4} {:.4},{:.4} {:.4},{:.4}",
+            self.a.0, self.a.1, self.b.0, self.b.1, self.c.0, self.c.1, self.d.0, self.d.1
+        )
+    }
+
+    fn arcs(&self) -> (Arc, Arc) {
+        let first_arc = (
+            Line(self.a, self.b).median(),
+            self.a,
+            Line(self.a, self.d).median(),
+        );
+        let second_arc = (
+            Line(self.c, self.b).median(),
+            self.c,
+            Line(self.c, self.d).median(),
+        );
+        (first_arc, second_arc)
+    }
+}
+
 pub struct SvgConfig<'a> {
     pub view_box_width: u64,
     pub view_box_height: u64,
-    pub draw_triangles: bool,
     pub stroke_width: u64,
     pub stroke_color: &'a str,
     pub quad_colors: (&'a str, &'a str),
@@ -37,45 +100,39 @@ impl<'a> SvgBuilder<'a> {
         SvgBuilder { config, content }
     }
 
-    pub fn add_all_quads(&mut self, quads: Vec<Quadrilateral>) {
-        macro_rules! add_quad_group {
+    pub fn build(mut self, out_file: &mut File) -> std::io::Result<()> {
+        self.content += "  </g>\n";
+        self.content += "</svg>\n";
+        out_file.write_all(self.content.as_bytes())?;
+        Ok(())
+    }
+
+    pub fn add_all_polygons<T: SvgPolygon>(&mut self, polys: Vec<T>) {
+        macro_rules! add_polygon_group {
             ($type:expr, $color:expr) => {
                 self.content += &format!(r#"    <g fill="{}">"#, $color);
                 self.content += "\n";
-                let qs = quads.iter().filter(|q| q.quadrilateral_type() == $type);
-                for q in qs {
-                    self.add_quad(&q)
+                let filtered = polys.iter().filter(|p| p.polygon_type() == $type);
+                for p in filtered {
+                    self.add_polygon(p)
                 }
                 self.content += "    </g>\n";
             };
         }
-        add_quad_group!(RobinsonTriangleType::Small, self.config.quad_colors.0);
-        add_quad_group!(RobinsonTriangleType::Large, self.config.quad_colors.1);
+        add_polygon_group!(RobinsonTriangleType::Small, self.config.quad_colors.0);
+        add_polygon_group!(RobinsonTriangleType::Large, self.config.quad_colors.1);
 
         if let Some((color_1, color_2)) = self.config.arc_colors {
-            let (arcs_1, arcs_2): (Vec<_>, Vec<_>) = quads.iter().map(Quadrilateral::arcs).unzip();
+            let (arcs_1, arcs_2): (Vec<_>, Vec<_>) = polys.iter().map(SvgPolygon::arcs).unzip();
             self.add_arc_group(arcs_1, &color_1);
             self.add_arc_group(arcs_2, &color_2);
         }
     }
 
-    fn add_quad(&mut self, quad: &Quadrilateral) {
-        let points = &format!(
-            "{:.4},{:.4} {:.4},{:.4} {:.4},{:.4} {:.4},{:.4}",
-            quad.a.0, quad.a.1, quad.b.0, quad.b.1, quad.c.0, quad.c.1, quad.d.0, quad.d.1
-        );
+    fn add_polygon(&mut self, polygon: &dyn SvgPolygon) {
         self.content += "      ";
-        self.content += &format!(r#"<polygon points="{}" />"#, points);
+        self.content += &format!(r#"<polygon points="{}" />"#, polygon.points_string());
         self.content += "\n";
-
-        if self.config.draw_triangles {
-            self.content += "      ";
-            self.content += &format!(
-                r#"<line x1="{}" y1="{}" x2="{}" y2="{}" />"#,
-                quad.a.0, quad.a.1, quad.c.0, quad.c.1
-            );
-            self.content += "\n";
-        }
     }
 
     fn add_arc_group(&mut self, arcs: Vec<Arc>, color: &str) {
@@ -97,12 +154,5 @@ impl<'a> SvgBuilder<'a> {
         self.content += "      ";
         self.content += &format!(r#"<path d="{}" />"#, path);
         self.content += "\n";
-    }
-
-    pub fn build(mut self, out_file: &mut File) -> std::io::Result<()> {
-        self.content += "  </g>\n";
-        self.content += "</svg>\n";
-        out_file.write_all(self.content.as_bytes())?;
-        Ok(())
     }
 }
