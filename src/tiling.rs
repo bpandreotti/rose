@@ -3,7 +3,7 @@ use crate::geometry::*;
 pub fn generate_tiling(seed: Vec<RobinsonTriangle>, num_generations: u64) -> Vec<RobinsonTriangle> {
     let mut triangles = seed;
     for _ in 0..num_generations {
-        triangles = decompose_all(triangles);
+        triangles = triangles.into_iter().flat_map(decompose).collect();
     }
     triangles
 }
@@ -33,10 +33,6 @@ pub fn merge_pairs(mut triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilateral> {
             }
         })
         .collect()
-}
-
-fn decompose_all(triangles: Vec<RobinsonTriangle>) -> Vec<RobinsonTriangle> {
-    triangles.into_iter().flat_map(decompose).collect()
 }
 
 fn decompose(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
@@ -124,7 +120,7 @@ mod tests {
     fn test_matching_rules() {
         // Create two rhombuses, a small one centered at x=1000, and a large one next to it,
         // centered at x=4000. They are scaled appropriately.
-        let mut triangles = {
+        let seed = {
             let mut small = crate::seeds::rhombus(RobinsonTriangleType::Small)
                 .transform(Point(1000.0, 2000.0), 1000.0);
             let large = crate::seeds::rhombus(RobinsonTriangleType::Large)
@@ -134,9 +130,7 @@ mod tests {
         };
 
         // Decompose them for eight generations
-        for _ in 0..8 {
-            triangles = decompose_all(triangles);
-        }
+        let triangles = generate_tiling(seed, 8);
 
         #[derive(Debug, PartialEq)]
         enum EdgeType {

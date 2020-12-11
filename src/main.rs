@@ -171,7 +171,7 @@ fn get_color_scheme_from_arg(arg: ColorSchemeArgument) -> ColorScheme {
             quad_colors: ("#e0be4e", "#f9d96d"),
             stroke_color: "#9b6a01",
             arc_colors: ("#4e5de0", "#884ee0"),
-        }
+        },
     }
 }
 
@@ -224,6 +224,8 @@ fn main() -> std::io::Result<()> {
     if args.draw_triangles {
         builder.add_all_polygons(triangles);
     } else {
+        // If the user didn't pass the "--draw-triangles" flag, we must merge the triangles and add
+        // the resulting rhombuses to the SVG
         let quads = tiling::merge_pairs(triangles);
         builder.add_all_polygons(quads);
     }

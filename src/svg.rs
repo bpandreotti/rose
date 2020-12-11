@@ -42,7 +42,11 @@ impl SvgPolygon for RobinsonTriangle {
 
 impl SvgPolygon for Quadrilateral {
     fn polygon_type(&self) -> RobinsonTriangleType {
-        self.quadrilateral_type()
+        if Line(self.a, self.c).length() > Line(self.b, self.d).length() {
+            RobinsonTriangleType::Large
+        } else {
+            RobinsonTriangleType::Small
+        }
     }
 
     fn points_string(&self) -> String {

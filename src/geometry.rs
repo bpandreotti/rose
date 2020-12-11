@@ -27,9 +27,15 @@ macro_rules! assert_close {
     };
 }
 
+/// A trait that represents common transformations on geometric objects
 pub trait Transform: Sized {
+    /// Rotate the object aroud the origin by a ginve angle, in degrees.
     fn rotate(&self, angle: f64) -> Self;
+    
+    /// Mirror the object across the x axis
     fn mirror_x(&self) -> Self;
+
+    /// Mirror the object across the y axis
     fn mirror_y(&self) -> Self;
 }
 
@@ -51,6 +57,8 @@ impl Point {
         self.0 * other.1 - self.1 * other.0
     }
 
+    /// Compares two points by their x coordinate. If their x coordinates are close (as defined by
+    /// the `Close` trait), compare by their y coordinate.
     pub fn compare(a: Point, b: Point) -> std::cmp::Ordering {
         use std::cmp::Ordering;
         if close(a.0, b.0) {
@@ -71,13 +79,17 @@ impl Point {
 
 impl Close for Point {
     fn is_close(&self, other: &Self) -> bool {
+        // Two points are close if both their coordinates are close
         self.0.is_close(&other.0) && self.1.is_close(&other.1)
     }
 }
 
-// @TODO: Add tests for `Transform` trait
 impl Transform for Point {
+    // A rotation by a positive angle is a clockwise rotation in SVG coordinates, or an
+    // anti-clockwise rotation in traditional cartesian coordinates. For example:
+    //   Point(1.0, 0.0).rotate(90.0) == Point(0.0, 1.0)
     fn rotate(&self, angle: f64) -> Self {
+        // See https://en.wikipedia.org/wiki/Rotation_matrix
         let cos = f64::cos(DEG_TO_RAD * angle);
         let sin = f64::sin(DEG_TO_RAD * angle);
         Point(self.0 * cos - self.1 * sin, self.0 * sin + self.1 * cos)
@@ -172,7 +184,7 @@ impl RobinsonTriangle {
         } else if close(ca / ab, PHI_INVERSE) {
             RobinsonTriangleType::Small
         } else {
-            panic!()
+            panic!("Triangle sides are of invalid ratio")
         }
     }
 
@@ -185,7 +197,7 @@ impl RobinsonTriangle {
         a: Point,
         c: Point,
         triangle_type: RobinsonTriangleType,
-        clockwise: bool,
+        right_handed: bool,
     ) -> Self {
         let ratio = match triangle_type {
             RobinsonTriangleType::Small => PHI,
@@ -194,9 +206,12 @@ impl RobinsonTriangle {
         let median = (a + c) / 2.0;
         // Normalized direction vector from the median point to b
         let direction_to_b = {
-            let a_to_c = c - a;
-            let d = Point(a_to_c.1, -a_to_c.0).normalized();
-            if clockwise { d } else { -d }
+            // If the triangle is right-handed -- that is, if the a to b to c path makes a right
+            // turn -- the direction to b from the base median is the direction from a to c turned
+            // 90 degrees anti-clockwise. Of course, if the triangle is left-handed, it's the
+            // opposite.
+            let d = (c - a).rotate(-90.0).normalized();
+            if right_handed { d } else { -d }
         };
         // Height of the resulting triangle
         let height = {
@@ -248,16 +263,6 @@ pub struct Quadrilateral {
     pub b: Point,
     pub c: Point,
     pub d: Point,
-}
-
-impl Quadrilateral {
-    pub fn quadrilateral_type(&self) -> RobinsonTriangleType {
-        if Line(self.a, self.c).length() > Line(self.b, self.d).length() {
-            RobinsonTriangleType::Large
-        } else {
-            RobinsonTriangleType::Small
-        }
-    }
 }
 
 // Useful for tests
