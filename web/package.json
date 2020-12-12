@@ -1,0 +1,25 @@
+{
+  "name": "rose-web",
+  "author": "Bruno Andreotti <bandreotti@protonmail.com>",
+  "description": "A Penrose tiling generator",
+  "version": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bpandreotti/rose"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack --config webpack.config.js",
+    "serve": "webpack-dev-server"
+  },
+  "dependencies": {
+    "rose-wasm": "file:../rose-wasm/pkg"
+  },
+  "devDependencies": {
+    "webpack": "^4.29.3",
+    "webpack-cli": "^3.1.0",
+    "webpack-dev-server": "^3.1.5",
+    "copy-webpack-plugin": "^5.0.0"
+  }
+}
