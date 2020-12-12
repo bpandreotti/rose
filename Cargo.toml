@@ -1,13 +1,2 @@
-[package]
-name = "rose"
-version = "0.1.0"
-authors = ["Bruno Andreotti <bandreotti@protonmail.com>"]
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[dependencies]
-structopt = "0.3.19"
-
-[dev-dependencies]
-rand = "0.7.3"
+[workspace]
+members = ["rose", "rose-wasm"]
