@@ -87,8 +87,7 @@ pub struct SvgBuilder<'a> {
 
 impl<'a> SvgBuilder<'a> {
     pub fn new(config: SvgConfig<'a>) -> Self {
-        let mut content = r#"<?xml version="1.0" encoding="utf-8"?>"#.to_string() + "\n";
-        content += &format!(
+        let mut content = format!(
             r#"<svg width="100%" height="100%" viewBox="0 0 {} {}" "#,
             config.view_box_width, config.view_box_height
         );
@@ -105,10 +104,16 @@ impl<'a> SvgBuilder<'a> {
     }
 
     pub fn build(mut self, out_file: &mut File) -> std::io::Result<()> {
+        let declaration = r#"<?xml version="1.0" encoding="utf-8"?>"#.to_string() + "\n";
+        out_file.write_all(declaration.as_bytes())?;
         self.content += "  </g>\n";
         self.content += "</svg>\n";
         out_file.write_all(self.content.as_bytes())?;
         Ok(())
+    }
+
+    pub fn build_to_string(self) -> String {
+        self.content
     }
 
     pub fn add_all_polygons<T: SvgPolygon>(&mut self, polys: Vec<T>) {
