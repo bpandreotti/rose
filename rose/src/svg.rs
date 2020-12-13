@@ -1,11 +1,12 @@
 use crate::geometry::*;
 
+use std::fmt::Write;
 use std::fs::File;
-use std::io::prelude::*;
+use std::write;
 
 pub trait SvgPolygon {
     fn polygon_type(&self) -> RobinsonTriangleType;
-    fn points_string(&self) -> String;
+    fn write_points(&self, builder: &mut SvgBuilder) -> std::fmt::Result;
     fn arcs(&self) -> (Arc, Arc);
 }
 
@@ -14,8 +15,9 @@ impl SvgPolygon for RobinsonTriangle {
         self.triangle_type
     }
 
-    fn points_string(&self) -> String {
-        format!(
+    fn write_points(&self, builder: &mut SvgBuilder) -> std::fmt::Result {
+        write!(
+            builder.content,
             "{:.4},{:.4} {:.4},{:.4} {:.4},{:.4}",
             self.a.0, self.a.1, self.b.0, self.b.1, self.c.0, self.c.1,
         )
@@ -49,8 +51,9 @@ impl SvgPolygon for Quadrilateral {
         }
     }
 
-    fn points_string(&self) -> String {
-        format!(
+    fn write_points(&self, builder: &mut SvgBuilder) -> std::fmt::Result {
+        write!(
+            builder.content,
             "{:.4},{:.4} {:.4},{:.4} {:.4},{:.4} {:.4},{:.4}",
             self.a.0, self.a.1, self.b.0, self.b.1, self.c.0, self.c.1, self.d.0, self.d.1
         )
@@ -87,45 +90,38 @@ pub struct SvgBuilder<'a> {
 
 impl<'a> SvgBuilder<'a> {
     pub fn new(config: SvgConfig<'a>) -> Self {
-        let mut content = format!(
-            r#"<svg width="100%" height="100%" viewBox="0 0 {} {}" "#,
-            config.view_box_width, config.view_box_height
+        let content = format!(
+            "<svg width=\"100%\" height=\"100%\" viewBox=\"0 0 {} {}\" preserveAspectRatio=\
+            \"xMidYMid slice\" xmlns=\"http://www.w3.org/2000/svg\">\n  <g stroke=\"{}\" \
+            stroke-width=\"{}\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n",
+            config.view_box_width, config.view_box_height, config.stroke_color, config.stroke_width,
         );
-        content += r#"preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">"#;
-        content += "\n";
-
-        content += &format!(
-            r#"  <g stroke="{}" stroke-width="{}" stroke-linecap="round" stroke-linejoin="round">"#,
-            config.stroke_color, config.stroke_width
-        );
-        content += "\n";
-
         SvgBuilder { config, content }
     }
 
-    pub fn build(mut self, out_file: &mut File) -> std::io::Result<()> {
-        let declaration = r#"<?xml version="1.0" encoding="utf-8"?>"#.to_string() + "\n";
-        out_file.write_all(declaration.as_bytes())?;
-        self.content += "  </g>\n";
-        self.content += "</svg>\n";
+    pub fn build(self, out_file: &mut File) -> std::io::Result<()> {
+        use std::io::prelude::*;
+        let declaration = b"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";
+        out_file.write_all(declaration)?;
         out_file.write_all(self.content.as_bytes())?;
+        out_file.write_all(b"  </g>\n</svg>\n")?;
         Ok(())
     }
 
-    pub fn build_to_string(self) -> String {
-        self.content
+    pub fn build_to_string(mut self) -> Result<String, std::fmt::Error> {
+        write!(self.content, "  </g>\n</svg>\n")?;
+        Ok(self.content)
     }
 
-    pub fn add_all_polygons<T: SvgPolygon>(&mut self, polys: Vec<T>) {
+    pub fn add_all_polygons<T: SvgPolygon>(&mut self, polys: Vec<T>) -> std::fmt::Result {
         macro_rules! add_polygon_group {
             ($type:expr, $color:expr) => {
-                self.content += &format!(r#"    <g fill="{}">"#, $color);
-                self.content += "\n";
+                writeln!(self.content, r#"    <g fill="{}">"#, $color)?;
                 let filtered = polys.iter().filter(|p| p.polygon_type() == $type);
                 for p in filtered {
-                    self.add_polygon(p)
+                    self.add_polygon(p)?
                 }
-                self.content += "    </g>\n";
+                writeln!(self.content, "    </g>")?;
             };
         }
         add_polygon_group!(RobinsonTriangleType::Small, self.config.quad_colors.0);
@@ -133,35 +129,33 @@ impl<'a> SvgBuilder<'a> {
 
         if let Some((color_1, color_2)) = self.config.arc_colors {
             let (arcs_1, arcs_2): (Vec<_>, Vec<_>) = polys.iter().map(SvgPolygon::arcs).unzip();
-            self.add_arc_group(arcs_1, &color_1);
-            self.add_arc_group(arcs_2, &color_2);
+            self.add_arc_group(arcs_1, &color_1)?;
+            self.add_arc_group(arcs_2, &color_2)?;
         }
+        Ok(())
     }
 
-    fn add_polygon(&mut self, polygon: &dyn SvgPolygon) {
-        self.content += "      ";
-        self.content += &format!(r#"<polygon points="{}" />"#, polygon.points_string());
-        self.content += "\n";
+    fn add_polygon(&mut self, polygon: &dyn SvgPolygon) -> std::fmt::Result {
+        write!(self.content, "      <polygon points=\"")?;
+        polygon.write_points(self)?;
+        writeln!(self.content, "\" />")
     }
 
-    fn add_arc_group(&mut self, arcs: Vec<Arc>, color: &str) {
-        self.content += &format!(r#"    <g fill="none" stroke="{}">"#, color);
-        self.content += "\n";
+    fn add_arc_group(&mut self, arcs: Vec<Arc>, color: &str) -> std::fmt::Result {
+        writeln!(self.content, "    <g fill=\"none\" stroke=\"{}\">", color)?;
         for a in arcs {
-            self.add_arc(a);
+            self.add_arc(a)?;
         }
-        self.content += "    </g>\n";
+        writeln!(self.content, "    </g>")
     }
 
-    fn add_arc(&mut self, (start, center, end): Arc) {
+    fn add_arc(&mut self, (start, center, end): Arc) -> std::fmt::Result {
         let radius = Line(start, center).length();
         let sweep_flag = (start - center).cross(end - center) > 0.0;
-        let path = format!(
-            "M {} {} A {} {} 0 0 {} {} {}",
+        writeln!(
+            self.content,
+            "      <path d=\"M {} {} A {} {} 0 0 {} {} {}\" />",
             start.0, start.1, radius, radius, sweep_flag as u8, end.0, end.1
-        );
-        self.content += "      ";
-        self.content += &format!(r#"<path d="{}" />"#, path);
-        self.content += "\n";
+        )
     }
 }

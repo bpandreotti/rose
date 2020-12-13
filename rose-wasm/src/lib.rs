@@ -24,6 +24,6 @@ pub fn get_svg(
     let quads = tiling::merge_pairs(triangles);
 
     let mut builder = SvgBuilder::new(svg_cfg);
-    builder.add_all_polygons(quads);
-    builder.build_to_string()
+    builder.add_all_polygons(quads).unwrap();
+    builder.build_to_string().unwrap()
 }
