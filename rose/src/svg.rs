@@ -91,7 +91,7 @@ impl<'a> SvgBuilder<'a> {
             r#"<svg width="100%" height="100%" viewBox="0 0 {} {}" "#,
             config.view_box_width, config.view_box_height
         );
-        content += r#"preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">"#;
+        content += r#"preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">"#;
         content += "\n";
 
         content += &format!(
