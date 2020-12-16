@@ -1,5 +1,6 @@
 use crate::geometry::*;
 
+#[derive(Clone)]
 pub struct Seed(Vec<RobinsonTriangle>);
 
 impl Seed {
@@ -80,18 +81,22 @@ pub fn pizza() -> Seed {
 }
 
 #[cfg(test)]
+pub fn get_all_seeds() -> [Seed; 4] {
+    [
+        rose(),
+        rhombus(RobinsonTriangleType::Large),
+        rhombus(RobinsonTriangleType::Small),
+        pizza(),
+    ]
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn test_side_length() {
-        let all_seeds = [
-            rose(),
-            rhombus(RobinsonTriangleType::Large),
-            rhombus(RobinsonTriangleType::Small),
-            pizza(),
-        ];
-        for s in &all_seeds {
+        for s in &get_all_seeds() {
             for t in &s.0 {
                 assert_close!(Line(t.a, t.b).length(), 1.0);
                 assert_close!(Line(t.c, t.b).length(), 1.0);

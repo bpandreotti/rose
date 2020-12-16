@@ -21,7 +21,7 @@ pub fn get_svg(
 
     let seed = seeds::pizza().transform(Point(500.0, 500.0), 750.0);
     let triangles = tiling::generate_tiling(seed, num_generations as u64);
-    let quads = tiling::merge_pairs(triangles);
+    let quads = tiling::merge_pairs_hashing(triangles);
 
     let mut builder = SvgBuilder::new(svg_cfg);
     builder.add_all_polygons(quads).unwrap();

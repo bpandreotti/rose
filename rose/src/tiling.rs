@@ -1,4 +1,6 @@
 use crate::geometry::*;
+use std::collections::hash_map::Entry;
+use std::collections::HashMap;
 
 pub fn generate_tiling(seed: Vec<RobinsonTriangle>, num_generations: u64) -> Vec<RobinsonTriangle> {
     let mut triangles = seed;
@@ -33,6 +35,72 @@ pub fn merge_pairs(mut triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilateral> {
             }
         })
         .collect()
+}
+
+pub fn merge_pairs_hashing(triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilateral> {
+    // The basic idea of this algorithm is to use a hash map indexed by the triangles bases' 
+    // medians, and to iterate through the triangles vector inserting them into the map. If there is
+    // already a triangle with that same hash, they have the same base median, and can be merged.
+    // This would be O(n). Since the coordinates are stored as floating point numbers, we would have
+    // a problem if two triangles have base medians that are very close (closer than the `Close`
+    // trait tolerance) but still not exactly the same. In this case, their base medians would have
+    // completely different hashes, and the triangles would not be merged. Because of that, before
+    // we populate the hash map, we have to divide the points into discrete buckets and use these
+    // buckets for hashing, so that two base medians that are close will very likely be in the same
+    // bucket, and therefore will have the same hash. This introduces the possibilty for two errors:
+    // collisions and misses. If two base medians aren't close, but happen to land on the same
+    // bucket, we have a collision. If two base medians are close, but happen to land on the border
+    // between two buckets, such that they fall on different buckets, we would have a miss. Misses
+    // would leave some triangles remaining on the hash map, and we would have to go through it and
+    // try to find their pairs in the end. This is easier to do than trying to resolve collisions,
+    // so we choose the buckets accordingly.
+
+    // This is how we divide the points into buckets. We couuld just floor each point to an integer,
+    // but that would result in very large buckets, and make collisions very likely. Instead, we
+    // scale the points first, so that when we floor them to integers each bucket will be relatively
+    // smaller, avoiding collisions. If we make the scaling factor too large, the buckets will be
+    // too small, leading to more misses. This is a balancing act.
+    fn round_point_to_bucket(Point(x, y): Point) -> (i64, i64) {
+        // Maybe we can use the side length of the triangles to dynamically calculate the scaling
+        // factor that will result in the largest bucket size that still makes collisions
+        // impossible?
+        const SCALING_FACTOR: f64 = 1000.0;
+        ((x * SCALING_FACTOR) as i64, (y * SCALING_FACTOR) as i64)
+    }
+    let mut result = Vec::with_capacity(triangles.len() / 2);
+    let mut map = HashMap::<(i64, i64), RobinsonTriangle>::with_capacity(triangles.len());
+    for t in triangles {
+        let rounded = round_point_to_bucket(t.base_median());
+        match map.entry(rounded) {
+            Entry::Occupied(o) => {
+                // If there is a triangle in this bucket, we remove it from the hash map, and merge
+                // the triangles. We have to remove it to make fixing misses easier later.
+                let (_, other) = o.remove_entry();
+                assert_close!(other.base_median(), t.base_median());
+                result.push(Quadrilateral {
+                    a: t.a,
+                    b: t.b,
+                    c: t.c,
+                    d: other.b,
+                });
+            }
+            Entry::Vacant(v) => {
+                // If there is no triangle in this bucket, we just insert the current triangle.
+                v.insert(t);
+            }
+        }
+    }
+
+    // Since we removed all triangles that were merged, the only triangles left in the map are
+    // either misses, or triangles that actually have no pair and won't be rendered. A lazy way to
+    // find the missed pairs is to just use the other O(n log n) algorithm. These misses would be
+    // very rare if the triangles were randomly positioned, but the way the tiling is generated make
+    // it so triangles are generated with round integer coordinates, resulting in misses pretty
+    // consistently. Still, they make up a small amount of the total triangles, so we don't need to
+    // worry so much about optimizing this step.
+    let remaining = map.values().cloned().collect();
+    result.extend(merge_pairs(remaining));
+    result
 }
 
 fn decompose(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
@@ -114,6 +182,27 @@ mod tests {
         let original_len = triangles.len();
         let rhombs = merge_pairs(triangles);
         assert_eq!(original_len, rhombs.len() * 2)
+    }
+
+    #[test]
+    fn test_merge_pairs_hashing() {
+        for seed in crate::seeds::get_all_seeds().iter() {
+            let triangles = generate_tiling(seed.clone().transform(Point(500.0, 500.0), 1000.0), 3);
+            let mut expected = merge_pairs(triangles.clone());
+            let mut got = merge_pairs_hashing(triangles);
+
+            // Make sure we didn't miss any triangles
+            assert_eq!(expected.len(), got.len());
+
+            let quad_center = |&Quadrilateral { a, b, c, d }: &_| (a + b + c + d) / 4.0;
+            let quad_compare = |q1: &_, q2: &_| Point::compare(quad_center(q1), quad_center(q2));
+
+            expected.sort_by(quad_compare);
+            got.sort_by(quad_compare);
+            for (e, g) in expected.into_iter().zip(got) {
+                assert_close!(quad_center(&e), quad_center(&g))
+            }
+        }
     }
 
     #[test]
