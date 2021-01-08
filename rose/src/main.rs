@@ -226,7 +226,7 @@ fn main() -> std::io::Result<()> {
     } else {
         // If the user didn't pass the "--draw-triangles" flag, we must merge the triangles and add
         // the resulting rhombuses to the SVG
-        let quads = tiling::merge_pairs(triangles);
+        let quads = tiling::merge_pairs_hashing(triangles);
         builder.add_all_polygons(quads).expect("Error writing to string");
     }
     let mut out_file = File::create(args.output_file)?;

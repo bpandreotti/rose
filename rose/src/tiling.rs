@@ -55,27 +55,32 @@ pub fn merge_pairs_hashing(triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilatera
     // try to find their pairs in the end. This is easier to do than trying to resolve collisions,
     // so we choose the buckets accordingly.
 
+    let side_length = match triangles.get(0) {
+        Some(t) => Line(t.a, t.b).length(),
+        None => return vec![], // In case of empty triangles vector
+    };
+    let scaling_factor = 100.0 / side_length;
+
     // This is how we divide the points into buckets. We couuld just floor each point to an integer,
     // but that would result in very large buckets, and make collisions very likely. Instead, we
     // scale the points first, so that when we floor them to integers each bucket will be relatively
     // smaller, avoiding collisions. If we make the scaling factor too large, the buckets will be
     // too small, leading to more misses. This is a balancing act.
-    fn round_point_to_bucket(Point(x, y): Point) -> (i64, i64) {
-        // Maybe we can use the side length of the triangles to dynamically calculate the scaling
-        // factor that will result in the largest bucket size that still makes collisions
-        // impossible?
-        const SCALING_FACTOR: f64 = 1000.0;
-        ((x * SCALING_FACTOR) as i64, (y * SCALING_FACTOR) as i64)
-    }
+    let round_point_to_bucket = |Point(x, y)| -> (i32, i32) {
+        ((x * scaling_factor) as i32, (y * scaling_factor) as i32)
+    };
+
+    // We insert the indices instead of the actual triangles to save memory.
+    let mut map = HashMap::<(i32, i32), usize>::with_capacity(triangles.len());
     let mut result = Vec::with_capacity(triangles.len() / 2);
-    let mut map = HashMap::<(i64, i64), RobinsonTriangle>::with_capacity(triangles.len());
-    for t in triangles {
+    for (i, t) in triangles.iter().enumerate() {
         let rounded = round_point_to_bucket(t.base_median());
         match map.entry(rounded) {
             Entry::Occupied(o) => {
                 // If there is a triangle in this bucket, we remove it from the hash map, and merge
                 // the triangles. We have to remove it to make fixing misses easier later.
                 let (_, other) = o.remove_entry();
+                let other = &triangles[other];
                 assert_close!(other.base_median(), t.base_median());
                 result.push(Quadrilateral {
                     a: t.a,
@@ -86,7 +91,7 @@ pub fn merge_pairs_hashing(triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilatera
             }
             Entry::Vacant(v) => {
                 // If there is no triangle in this bucket, we just insert the current triangle.
-                v.insert(t);
+                v.insert(i);
             }
         }
     }
@@ -98,7 +103,7 @@ pub fn merge_pairs_hashing(triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilatera
     // it so triangles are generated with round integer coordinates, resulting in misses pretty
     // consistently. Still, they make up a small amount of the total triangles, so we don't need to
     // worry so much about optimizing this step.
-    let remaining = map.values().cloned().collect();
+    let remaining = map.values().map(|i| triangles[*i].clone()).collect::<Vec<_>>();
     result.extend(merge_pairs(remaining));
     result
 }
@@ -201,6 +206,23 @@ mod tests {
             got.sort_by(quad_compare);
             for (e, g) in expected.into_iter().zip(got) {
                 assert_close!(quad_center(&e), quad_center(&g))
+            }
+        }
+    }
+
+
+    /// This tests many combinations of seeds, scales, and generations to make sure that
+    /// `merge_pairs_hashing` will never result in a collision. This test can be pretty slow
+    #[test]
+    fn test_merge_pairs_hashing_collision() {
+        for seed in crate::seeds::get_all_seeds().iter() {
+            for size in 1..5 {
+                let scale = size as f64 * 200.0;
+                let mut triangles = seed.clone().transform(Point(scale / 2.0, scale / 2.0), scale);
+                for _ in 0..8 {
+                    triangles = triangles.into_iter().flat_map(decompose).collect();
+                    merge_pairs_hashing(triangles.clone());
+                }
             }
         }
     }
