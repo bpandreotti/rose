@@ -1,5 +1,7 @@
 # rose
 
+[Check out the live demo!](https://bpandreotti.github.io/rose/)
+
 <img src="images/rose.png" width="200"/>
 
 `rose` is a [Penrose tiling](https://en.wikipedia.org/wiki/Penrose_tiling) generator written in Rust
