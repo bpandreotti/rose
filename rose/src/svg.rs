@@ -4,6 +4,16 @@ use std::fmt::Write;
 use std::fs::File;
 use std::write;
 
+const SCALING_FACTOR: u64 = 1000;
+
+// Since writing a float to string is so slow, it is much better to convert it to an integer
+// (scaling it first so as not to lose too much precision) and write the integer to the string
+// instead. Using this technique to avoid writing floats to the SVG improves performance
+// considerably.
+fn scale_float(x: f64) -> i64 {
+    (x * SCALING_FACTOR as f64) as i64
+}
+
 pub trait SvgPolygon {
     fn polygon_type(&self) -> RobinsonTriangleType;
     fn write_points(&self, builder: &mut SvgBuilder) -> std::fmt::Result;
@@ -18,8 +28,13 @@ impl SvgPolygon for RobinsonTriangle {
     fn write_points(&self, builder: &mut SvgBuilder) -> std::fmt::Result {
         write!(
             builder.content,
-            "{:.4},{:.4} {:.4},{:.4} {:.4},{:.4}",
-            self.a.0, self.a.1, self.b.0, self.b.1, self.c.0, self.c.1,
+            "{},{} {},{} {},{}",
+            scale_float(self.a.0),
+            scale_float(self.a.1),
+            scale_float(self.b.0),
+            scale_float(self.b.1),
+            scale_float(self.c.0),
+            scale_float(self.c.1),
         )
     }
 
@@ -54,8 +69,15 @@ impl SvgPolygon for Quadrilateral {
     fn write_points(&self, builder: &mut SvgBuilder) -> std::fmt::Result {
         write!(
             builder.content,
-            "{:.4},{:.4} {:.4},{:.4} {:.4},{:.4} {:.4},{:.4}",
-            self.a.0, self.a.1, self.b.0, self.b.1, self.c.0, self.c.1, self.d.0, self.d.1
+            "{},{} {},{} {},{} {},{}",
+            scale_float(self.a.0),
+            scale_float(self.a.1),
+            scale_float(self.b.0),
+            scale_float(self.b.1),
+            scale_float(self.c.0),
+            scale_float(self.c.1),
+            scale_float(self.d.0),
+            scale_float(self.d.1),
         )
     }
 
@@ -90,11 +112,15 @@ pub struct SvgBuilder<'a> {
 
 impl<'a> SvgBuilder<'a> {
     pub fn new(config: SvgConfig<'a>) -> Self {
+        // As we are scaling all coordinates by SCALING_FACTOR, we must also scale the view box.
         let content = format!(
             "<svg width=\"100%\" height=\"100%\" viewBox=\"0 0 {} {}\" preserveAspectRatio=\
             \"xMidYMid slice\" xmlns=\"http://www.w3.org/2000/svg\">\n  <g stroke=\"{}\" \
             stroke-width=\"{}\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n",
-            config.view_box_width, config.view_box_height, config.stroke_color, config.stroke_width,
+            config.view_box_width * SCALING_FACTOR,
+            config.view_box_height * SCALING_FACTOR,
+            config.stroke_color,
+            config.stroke_width * SCALING_FACTOR,
         );
         SvgBuilder { config, content }
     }
@@ -150,12 +176,18 @@ impl<'a> SvgBuilder<'a> {
     }
 
     fn add_arc(&mut self, (start, center, end): Arc) -> std::fmt::Result {
-        let radius = Line(start, center).length();
+        let radius = scale_float(Line(start, center).length());
         let sweep_flag = (start - center).cross(end - center) > 0.0;
         writeln!(
             self.content,
             "      <path d=\"M {} {} A {} {} 0 0 {} {} {}\" />",
-            start.0, start.1, radius, radius, sweep_flag as u8, end.0, end.1
+            scale_float(start.0),
+            scale_float(start.1),
+            radius,
+            radius,
+            sweep_flag as u8,
+            scale_float(end.0),
+            scale_float(end.1),
         )
     }
 }
