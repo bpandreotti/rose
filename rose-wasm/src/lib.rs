@@ -3,27 +3,50 @@ use rose::*;
 use svg::{SvgBuilder, SvgConfig};
 use wasm_bindgen::prelude::*;
 
+// This function needs to have so many arguments because passing tuples or structs with `&str`s
+// between javascript and rust is not supported
+#[allow(clippy::clippy::too_many_arguments)]
 #[wasm_bindgen]
 pub fn get_svg(
     num_generations: u8,
-    first_color: &str,
-    second_color: &str,
+    seed: &str,
+    first_quad_color: &str,
+    second_quad_color: &str,
+    stroke_color: &str,
+    first_arc_color: &str,
+    second_arc_color: &str,
     stroke_width: u8,
+    draw_triangles: bool,
+    draw_arcs: bool,
 ) -> String {
     let svg_cfg = SvgConfig {
         view_box_width: 1000,
         view_box_height: 1000,
         stroke_width: stroke_width as u64,
-        stroke_color: "white",
-        quad_colors: (first_color, second_color),
-        arc_colors: None,
+        stroke_color,
+        quad_colors: (first_quad_color, second_quad_color),
+        arc_colors: if draw_arcs {
+            Some((first_arc_color, second_arc_color))
+        } else {
+            None
+        },
     };
 
-    let seed = seeds::pizza().transform(Point(500.0, 500.0), 750.0);
-    let triangles = tiling::generate_tiling(seed, num_generations as u64);
-    let quads = tiling::merge_pairs_hashing(triangles);
+    let seed = match seed {
+        "rose" => seeds::rose(),
+        "pizza" => seeds::pizza(),
+        "rhombus" => seeds::rhombus(geometry::RobinsonTriangleType::Large),
+        _ => panic!(),
+    }
+    .transform(Point(500.0, 500.0), 500.0);
 
+    let triangles = tiling::generate_tiling(seed, num_generations as u64);
     let mut builder = SvgBuilder::new(svg_cfg);
-    builder.add_all_polygons(quads).unwrap();
+    if draw_triangles {
+        builder.add_all_polygons(triangles).unwrap();
+    } else {
+        let quads = tiling::merge_pairs_hashing(triangles);
+        builder.add_all_polygons(quads).unwrap();
+    }    
     builder.build_to_string().unwrap()
 }

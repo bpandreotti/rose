@@ -1,15 +1,60 @@
 import * as wasm from "rose-wasm";
 
-document.getElementById("button-generate").onclick = () => {
-    const COLOR_SCHEMES = {
-        "red": ["#97332b", "#c05150"],
-        "green": ["#2c6e49", "#4c956c"],
-        "blue": ["#1f4a77", "#416d9f"],
-    };
+const COLOR_SCHEMES = {
+    "red": {
+        quad_colors: ["#97332b", "#c05150"],
+        stroke_color: "white",
+        arc_colors: ["#50d35b", "#30bbe5"],
+    },
+    "green": {
+        quad_colors: ["#2c6e49", "#4c956c"],
+        stroke_color: "white",
+        arc_colors: ["#d17432", "#8d31ce"],
+    },
+    "blue": {
+        quad_colors: ["#1f4a77", "#416d9f"],
+        stroke_color: "white",
+        arc_colors: ["#d13232", "#a9d132"],
+    },
+    "purple": {
+        quad_colors: ["#674593", "#915eae"],
+        stroke_color: "white",
+        arc_colors: ["#a9d132", "#d17432"],
+    },
+    "grey": {
+        quad_colors: ["#404040", "#545454"],
+        stroke_color: "white",
+        arc_colors: ["black", "#202020"],
+    },
+    "yellow": {
+        quad_colors: ["#e0be4e", "#f9d96d"],
+        stroke_color: "#9b6a01",
+        arc_colors: ["#4e5de0", "#884ee0"],
+    },
+};
+
+const generate = () => {
     let num_generations = +document.getElementById("input-num-generations").value;
-    let colors = COLOR_SCHEMES[document.getElementById("input-color-scheme").value];
+    let seed = document.getElementById("input-seed").value;
+    let color_scheme = COLOR_SCHEMES[document.getElementById("input-color-scheme").value];
     let stroke_width = +document.getElementById("input-stroke-width").value;
-    let svg = wasm.get_svg(num_generations, colors[0], colors[1], stroke_width);
+    let draw_triangles = !!document.getElementById("input-draw-triangles").checked;
+    let draw_arcs = !!document.getElementById("input-draw-arcs").checked;
+    
+    let svg = wasm.get_svg(
+        num_generations,
+        seed,
+        ...color_scheme.quad_colors,
+        color_scheme.stroke_color,
+        ...color_scheme.arc_colors,
+        stroke_width,
+        draw_triangles,
+        draw_arcs,
+    );
+
     let container = document.getElementById("svg-container");
     container.innerHTML = svg;
-}
+};
+
+document.getElementById("button-generate").onclick = generate;
+generate();
