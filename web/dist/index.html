@@ -3,13 +3,18 @@
 
 <head>
   <meta charset="utf-8">
-  <title>Hello, world!</title>
+  <title>Rose</title>
 </head>
 
 <body>
   <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
   <script src="./bootstrap.js"></script>
-  <div style="position: relative; z-index: 2; height: 150px; width: 300px; padding: 20px; font-family: Arial, Helvetica, sans-serif; color: white; background-color: rgba(0, 0, 0, 0.8);">
+  <a href="https://github.com/bpandreotti/rose">
+    <img style="position: absolute; right: 0px; top: 0px; z-index: 3;" loading="lazy" width="149" height="149"
+      src="https://github.blog/wp-content/uploads/2008/12/forkme_right_darkblue_121621.png?resize=149%2C149"
+      class="attachment-full size-full" alt="Fork me on GitHub" data-recalc-dims="1">
+  </a>
+  <div style="position: relative; z-index: 2; height: 250px; width: 300px; padding: 20px; font-family: Arial, Helvetica, sans-serif; color: white; background-color: rgba(0, 0, 0, 0.8);">
     <table style="width:100%">
       <colgroup>
         <col style="width:70%">
@@ -22,12 +27,25 @@
         </td>
       </tr>
       <tr>
+        <td>Seed:</td>
+        <td>
+          <select name="seed" id="input-seed">
+            <option value="rose">Rose</option>
+            <option value="pizza">Pizza</option>
+            <option value="rhombus">Rhombus</option>
+          </select>
+        </td>
+      </tr>
+      <tr>
         <td>Color scheme:</td>
         <td>
           <select name="color-scheme" id="input-color-scheme">
             <option value="red">Red</option>
             <option value="green">Green</option>
             <option value="blue">Blue</option>
+            <option value="purple">Purple</option>
+            <option value="grey">Grey</option>
+            <option value="yellow">Yellow</option>
           </select>
         </td>
       </tr>
@@ -35,6 +53,18 @@
         <td>Stroke width:</td>
         <td>
           <input style="width: 100%; box-sizing: border-box;" type="number" min="0" max="20" value="3" id="input-stroke-width">
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <input type="checkbox" id="input-draw-triangles">
+          <label for="input-draw-triangles">Draw triangles</label>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <input type="checkbox" id="input-draw-arcs">
+          <label for="input-draw-arcs">Draw matching arcs</label>
         </td>
       </tr>
     </table>
