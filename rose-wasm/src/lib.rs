@@ -32,13 +32,13 @@ pub fn get_svg(
         },
     };
 
+    let center = Point(500.0, 500.0);
     let seed = match seed {
-        "rose" => seeds::rose(),
-        "pizza" => seeds::pizza(),
-        "rhombus" => seeds::rhombus(geometry::RobinsonTriangleType::Large),
+        "rose" => seeds::rose().transform(center, 125.0),
+        "pizza" => seeds::pizza().transform(center, 250.0),
+        "rhombus" => seeds::rhombus(geometry::RobinsonTriangleType::Large).transform(center, 500.0),
         _ => panic!(),
-    }
-    .transform(Point(500.0, 500.0), 500.0);
+    };
 
     let triangles = tiling::generate_tiling(seed, num_generations as u64);
     let mut builder = SvgBuilder::new(svg_cfg);
@@ -47,6 +47,6 @@ pub fn get_svg(
     } else {
         let quads = tiling::merge_pairs_hashing(triangles);
         builder.add_all_polygons(quads).unwrap();
-    }    
+    }
     builder.build_to_string().unwrap()
 }

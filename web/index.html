@@ -15,7 +15,7 @@
       src="https://github.blog/wp-content/uploads/2008/12/forkme_right_darkblue_121621.png?resize=149%2C149"
       class="attachment-full size-full" alt="Fork me on GitHub" data-recalc-dims="1">
   </a>
-  <div style="position: relative; z-index: 2; height: 250px; width: 300px; padding: 20px; font-family: Arial, Helvetica, sans-serif; color: white; background-color: rgba(0, 0, 0, 0.8);">
+  <div style="position: relative; z-index: 2; height: auto; width: 300px; padding: 20px; font-family: Arial, Helvetica, sans-serif; color: white; background-color: rgba(0, 0, 0, 0.8);">
     <table style="width:100%">
       <colgroup>
         <col style="width:70%">
@@ -24,13 +24,13 @@
       <tr>
         <td>Number of generations:</td>
         <td>
-          <input style="width: 100%; box-sizing: border-box;" type="number" min="0" max="10" value="5" id="input-num-generations">
+          <input style="width: 100%; box-sizing: border-box;" type="number" min="0" max="10" value="4" id="input-num-generations">
         </td>
       </tr>
       <tr>
         <td>Seed:</td>
         <td>
-          <select name="seed" id="input-seed">
+          <select name="seed" id="input-seed" style="width: 100%;">
             <option value="rose">Rose</option>
             <option value="pizza">Pizza</option>
             <option value="rhombus">Rhombus</option>
@@ -40,7 +40,7 @@
       <tr>
         <td>Color scheme:</td>
         <td>
-          <select name="color-scheme" id="input-color-scheme">
+          <select name="color-scheme" id="input-color-scheme" style="width: 100%;">
             <option value="red">Red</option>
             <option value="green">Green</option>
             <option value="blue">Blue</option>
@@ -53,7 +53,7 @@
       <tr>
         <td>Stroke width:</td>
         <td>
-          <input style="width: 100%; box-sizing: border-box;" type="number" min="0" max="20" value="3" id="input-stroke-width">
+          <input style="width: 100%; box-sizing: border-box;" type="number" min="0" max="20" value="1" id="input-stroke-width">
         </td>
       </tr>
       <tr>
@@ -69,7 +69,8 @@
         </td>
       </tr>
     </table>
-    <button style="position: absolute; right: 20px; bottom: 20px;" id="button-generate">Generate</button>
+    <br>
+    <button style="width: 100%" id="button-generate">Generate</button>
   </div>
   <div style="position: fixed; top:0px; right:0px; bottom:0px; left:0px; z-index: 1;" id="svg-container"></div>
 </body>

@@ -33,6 +33,8 @@ const COLOR_SCHEMES = {
     },
 };
 
+const svg_container = document.getElementById("svg-container");
+
 const generate = () => {
     let num_generations = +document.getElementById("input-num-generations").value;
     let seed = document.getElementById("input-seed").value;
@@ -52,9 +54,21 @@ const generate = () => {
         draw_arcs,
     );
 
-    let container = document.getElementById("svg-container");
-    container.innerHTML = svg;
+    let svg_container = document.getElementById("svg-container");
+    svg_container.innerHTML = svg;
+    svg_container.children[0].style.transform = `scale(${scale})`;
 };
 
 document.getElementById("button-generate").onclick = generate;
+
+let scale = 1.0;
+const zoom = (event) => {
+    event.preventDefault();
+    const zoom_sensitivity = 0.04;
+    scale += event.deltaY * -zoom_sensitivity * (scale - 0.3);
+    scale = Math.min(Math.max(1.0, scale), 16.0);
+    svg_container.children[0].style.transform = `scale(${scale})`;
+};
+
+svg_container.onwheel = zoom;
 generate();
