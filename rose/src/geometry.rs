@@ -183,7 +183,7 @@ pub struct RobinsonTriangle {
 }
 
 impl RobinsonTriangle {
-    fn infer_triangle_type(a: Point, b: Point, c: Point) -> TileType {
+    pub fn infer_triangle_type(a: Point, b: Point, c: Point) -> TileType {
         let (ab, bc, ca) = (
             Line(a, b).length(),
             Line(b, c).length(),
@@ -269,7 +269,7 @@ impl Transform for RobinsonTriangle {
     }
 }
 
-pub type Arc = (Point, Point, Point); // Start, center, end
+pub type Arc = (Point, Point, Point, bool); // Start, center, end, large angle flag
 
 pub struct Quadrilateral {
     pub a: Point,

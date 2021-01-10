@@ -39,20 +39,19 @@ impl SvgPolygon for RobinsonTriangle {
     }
 
     fn arcs(&self) -> (Arc, Arc) {
-        let ratio = match self.triangle_type {
-            TileType::SmallRhombus => PHI,
-            TileType::LargeRhombus => PHI_INVERSE,
-            _ => todo!(),
-        };
+        let first_radius = Line(Line(self.a, self.b).median(), self.a).length();
         let first_arc = (
             Line(self.a, self.b).median(),
             self.a,
-            self.a + 0.5 * ratio * (self.c - self.a),
+            self.a + first_radius * (self.c - self.a).normalized(),
+            false,
         );
+        let second_radius = Line(Line(self.c, self.b).median(), self.c).length();
         let second_arc = (
             Line(self.c, self.b).median(),
             self.c,
-            self.c + 0.5 * ratio * (self.a - self.c),
+            self.c + second_radius * (self.a - self.c).normalized(),
+            false,
         );
         (first_arc, second_arc)
     }
@@ -60,11 +59,7 @@ impl SvgPolygon for RobinsonTriangle {
 
 impl SvgPolygon for Quadrilateral {
     fn polygon_type(&self) -> TileType {
-        if Line(self.a, self.c).length() > Line(self.b, self.d).length() {
-            TileType::LargeRhombus
-        } else {
-            TileType::SmallRhombus
-        }
+        RobinsonTriangle::infer_triangle_type(self.a, self.b, self.c)
     }
 
     fn write_points(&self, builder: &mut SvgBuilder) -> std::fmt::Result {
@@ -87,11 +82,14 @@ impl SvgPolygon for Quadrilateral {
             Line(self.a, self.b).median(),
             self.a,
             Line(self.a, self.d).median(),
+            false,
         );
         let second_arc = (
             Line(self.c, self.b).median(),
             self.c,
             Line(self.c, self.d).median(),
+            // Only in the dart tile, the second arc has an angle of more than 180 degrees
+            self.polygon_type() == TileType::Dart,
         );
         (first_arc, second_arc)
     }
@@ -142,17 +140,19 @@ impl<'a> SvgBuilder<'a> {
 
     pub fn add_all_polygons<T: SvgPolygon>(&mut self, polys: Vec<T>) -> std::fmt::Result {
         macro_rules! add_polygon_group {
-            ($type:expr, $color:expr) => {
+            ($color:expr, $($type:expr),*) => {
                 writeln!(self.content, r#"    <g fill="{}">"#, $color)?;
-                let filtered = polys.iter().filter(|p| p.polygon_type() == $type);
+                let filtered = polys.iter().filter(
+                    |p| $(p.polygon_type() == $type)||*
+                );
                 for p in filtered {
                     self.add_polygon(p)?
                 }
                 writeln!(self.content, "    </g>")?;
             };
         }
-        add_polygon_group!(TileType::SmallRhombus, self.config.quad_colors.0);
-        add_polygon_group!(TileType::LargeRhombus, self.config.quad_colors.1);
+        add_polygon_group!(self.config.quad_colors.0, TileType::SmallRhombus, TileType::Dart);
+        add_polygon_group!(self.config.quad_colors.1, TileType::LargeRhombus, TileType::Kite);
 
         if let Some((color_1, color_2)) = self.config.arc_colors {
             let (arcs_1, arcs_2): (Vec<_>, Vec<_>) = polys.iter().map(SvgPolygon::arcs).unzip();
@@ -176,16 +176,26 @@ impl<'a> SvgBuilder<'a> {
         writeln!(self.content, "    </g>")
     }
 
-    fn add_arc(&mut self, (start, center, end): Arc) -> std::fmt::Result {
+    fn add_arc(&mut self, (start, center, end, large_angle_flag): Arc) -> std::fmt::Result {
         let radius = scale_float(Line(start, center).length());
+
+        // This uses the cross product between the start and end directions in order to determine
+        // if the shortest rotation from start to end is clockwise or counterclockwise. If the arc
+        // is supposed to represent the largest rotation, we must invert the result.
         let sweep_flag = (start - center).cross(end - center) > 0.0;
+        let sweep_flag = if large_angle_flag {
+            !sweep_flag
+        } else {
+            sweep_flag
+        };
         writeln!(
             self.content,
-            "      <path d=\"M {} {} A {} {} 0 0 {} {} {}\" />",
+            "      <path d=\"M {} {} A {} {} 0 {} {} {} {}\" />",
             scale_float(start.0),
             scale_float(start.1),
             radius,
             radius,
+            large_angle_flag as u8,
             sweep_flag as u8,
             scale_float(end.0),
             scale_float(end.1),

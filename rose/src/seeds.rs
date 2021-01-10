@@ -77,11 +77,13 @@ pub fn pizza() -> Seed {
 }
 
 #[cfg(test)]
-pub fn get_all_seeds() -> [Seed; 4] {
+pub fn get_all_seeds() -> [Seed; 6] {
     [
         rose(),
         tile(TileType::LargeRhombus),
         tile(TileType::SmallRhombus),
+        tile(TileType::Kite),
+        tile(TileType::Dart),
         pizza(),
     ]
 }
@@ -95,7 +97,6 @@ mod tests {
         for s in &get_all_seeds() {
             for t in &s.0 {
                 assert_close!(Line(t.a, t.b).length(), 1.0);
-                assert_close!(Line(t.c, t.b).length(), 1.0);
             }
         }
     }

@@ -49,6 +49,8 @@ custom_arg_enum! {
         Rose = "rose",
         LargeRhombus = "large-rhombus",
         SmallRhombus = "small-rhombus",
+        Kite = "kite",
+        Dart = "dart",
         Pizza = "pizza",
     }
 }
@@ -181,6 +183,8 @@ fn get_seed_from_arg(arg: SeedArgument) -> seeds::Seed {
         Rose => seeds::rose(),
         LargeRhombus => seeds::tile(TileType::LargeRhombus),
         SmallRhombus => seeds::tile(TileType::SmallRhombus),
+        Kite => seeds::tile(TileType::Kite),
+        Dart => seeds::tile(TileType::Dart),
         Pizza => seeds::pizza(),
     }
 }
