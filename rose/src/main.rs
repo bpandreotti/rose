@@ -179,8 +179,8 @@ fn get_seed_from_arg(arg: SeedArgument) -> seeds::Seed {
     use SeedArgument::*;
     match arg {
         Rose => seeds::rose(),
-        LargeRhombus => seeds::rhombus(TileType::LargeRhombus),
-        SmallRhombus => seeds::rhombus(TileType::SmallRhombus),
+        LargeRhombus => seeds::tile(TileType::LargeRhombus),
+        SmallRhombus => seeds::tile(TileType::SmallRhombus),
         Pizza => seeds::pizza(),
     }
 }

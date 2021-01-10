@@ -36,7 +36,7 @@ pub fn get_svg(
     let seed = match seed {
         "rose" => seeds::rose().transform(center, 125.0),
         "pizza" => seeds::pizza().transform(center, 250.0),
-        "rhombus" => seeds::rhombus(geometry::TileType::LargeRhombus).transform(center, 500.0),
+        "rhombus" => seeds::tile(geometry::TileType::LargeRhombus).transform(center, 500.0),
         _ => panic!(),
     };
 

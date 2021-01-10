@@ -157,7 +157,47 @@ fn decompose(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
                 RobinsonTriangle::new(d, e, b),
             ]
         }
-        _ => todo!(),
+        TileType::Kite => {
+            // The half-kite triangle will be divided in three: two BCE and BDE half-kite triangles,
+            // and an AED half-dart triangle.
+            //                          B
+            //                      _--'\
+            //                  _--'     \
+            //           D  _--'          \
+            //          _-*'               \
+            //      _--'                    \
+            // A _-'_______________*_________\ C
+            //                     E
+            // It can be shown that:
+            //   the length of BD == (the length of BA) / phi
+            //   the length of AE == (the length of AC) / phi
+            let d = b + (a - b) / PHI;
+            let e = a + (c - a) / PHI;
+            vec![
+                RobinsonTriangle::new(b, c, e),
+                RobinsonTriangle::new(b, d, e),
+                RobinsonTriangle::new(a, e, d),
+            ]
+        }
+        TileType::Dart => {
+            // The half-dart triangle will be divided in two: an ADC half-kite triangle and a BCD
+            // half-dart triangle.
+            //                          B
+            //                      _--'/
+            //               D  _--'   /
+            //              _-*'      /
+            //          _--'         /
+            //      _--'            /
+            // A _-'_______________/ C
+            // 
+            // It can be shown that:
+            //   the length of AD == (the length of AB) / phi
+            let d = a + (b - a) / PHI;
+            vec![
+                RobinsonTriangle::new(a, d, c),
+                RobinsonTriangle::new(b, c, d),
+            ]
+        }
     }
 }
 
@@ -174,10 +214,11 @@ mod tests {
             .flat_map(|_| {
                 let p = random_point(&mut rng, -1000.0, 1000.0);
                 let q = random_point(&mut rng, -1000.0, 1000.0);
-                let triangle_type = if rng.gen() {
-                    TileType::LargeRhombus
-                } else {
-                    TileType::SmallRhombus
+                let triangle_type = match rng.gen_range(0, 4) {
+                    0 => TileType::SmallRhombus,
+                    1 => TileType::LargeRhombus,
+                    2 => TileType::Kite,
+                    _ => TileType::Dart,
                 };
                 vec![
                     RobinsonTriangle::from_base(p, q, triangle_type, true),
@@ -230,15 +271,17 @@ mod tests {
 
     #[test]
     fn test_matching_rules() {
-        // Create two rhombuses, a small one centered at x=1000, and a large one next to it,
-        // centered at x=4000. They are scaled appropriately.
+        // Create one tile of each type in a line at y=2000. They are scaled appropriately.
         let seed = {
-            let mut small = crate::seeds::rhombus(TileType::SmallRhombus)
-                .transform(Point(1000.0, 2000.0), 1000.0);
-            let large = crate::seeds::rhombus(TileType::LargeRhombus)
-                .transform(Point(4000.0, 2000.0), 1000.0);
-            small.extend(large);
-            small
+            let scale = 1000.0;
+            let y = 2000.0;
+            let tiles = [
+                crate::seeds::tile(TileType::SmallRhombus).transform(Point(1000.0, y), scale),
+                crate::seeds::tile(TileType::LargeRhombus).transform(Point(4000.0, y), scale),
+                crate::seeds::tile(TileType::Kite).transform(Point(7000.0, y), scale),
+                crate::seeds::tile(TileType::Dart).transform(Point(10000.0, y), scale),
+            ];
+            tiles.concat()
         };
 
         // Decompose them for eight generations
@@ -246,10 +289,14 @@ mod tests {
 
         #[derive(Debug, PartialEq)]
         enum EdgeType {
-            Type1,     // Goes from B to A in a small triangle or A to B in a large one
-            Type2,     // Goes from B to C in a small or large triangle
-            SmallBase, // Goes from A to C in a small triangle
-            LargeBase, // Goes from A to C in a large triangle
+            RhombusSide1,     // Goes from B to A in a small triangle or A to B in a large one
+            RhombusSide2,     // Goes from B to C in a small or large triangle
+            SmallRhombusBase, // Goes from A to C in a small triangle
+            LargeRhombusBase, // Goes from A to C in a large triangle
+            KiteDartSide1,    // Goes from A to B in a half-kite triangle or B to A in a half-dart
+            KiteDartSide2,    // Goes from C to B in a half-kite triangle or B to C in a half-dart
+            KiteBase,         // Goes from A to C in a half-kite triangle
+            DartBase,         // Goes from A to C in a half-dart triangle
         }
 
         // Split up the triangles into their composing edges
@@ -259,16 +306,25 @@ mod tests {
                 let RobinsonTriangle { triangle_type, a, b, c } = t;
                 match triangle_type {
                     TileType::SmallRhombus => vec![
-                        (EdgeType::Type1, Line(b, a)),
-                        (EdgeType::Type2, Line(b, c)),
-                        (EdgeType::SmallBase, Line(a, c)),
+                        (EdgeType::RhombusSide1, Line(b, a)),
+                        (EdgeType::RhombusSide2, Line(b, c)),
+                        (EdgeType::SmallRhombusBase, Line(a, c)),
                     ],
                     TileType::LargeRhombus => vec![
-                        (EdgeType::Type1, Line(a, b)),
-                        (EdgeType::Type2, Line(b, c)),
-                        (EdgeType::LargeBase, Line(a, c)),
+                        (EdgeType::RhombusSide1, Line(a, b)),
+                        (EdgeType::RhombusSide2, Line(b, c)),
+                        (EdgeType::LargeRhombusBase, Line(a, c)),
                     ],
-                    _ => todo!(),
+                    TileType::Kite => vec![
+                        (EdgeType::KiteDartSide1, Line(a, b)),
+                        (EdgeType::KiteDartSide2, Line(c, b)),
+                        (EdgeType::KiteBase, Line(a, c)),
+                    ],
+                    TileType::Dart => vec![
+                        (EdgeType::KiteDartSide1, Line(b, a)),
+                        (EdgeType::KiteDartSide2, Line(b, c)),
+                        (EdgeType::DartBase, Line(a, c)),
+                    ],
                 }
             })
             .collect();

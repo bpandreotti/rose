@@ -47,17 +47,12 @@ pub fn rose() -> Seed {
     Seed(first_sector)
 }
 
-pub fn rhombus(rhombus_type: TileType) -> Seed {
-    let base_size = match rhombus_type {
-        TileType::SmallRhombus => PHI_INVERSE,
-        TileType::LargeRhombus => PHI,
-        _ => todo!(),
-    };
-    let right = Point(base_size / 2.0, 0.0);
+pub fn tile(tile_type: TileType) -> Seed {
+    let right = Point(tile_type.base_to_side_ratio() / 2.0, 0.0);
     let left = -right;
     Seed(vec![
-        RobinsonTriangle::from_base(left, right, rhombus_type, true),
-        RobinsonTriangle::from_base(left, right, rhombus_type, false),
+        RobinsonTriangle::from_base(left, right, tile_type, true),
+        RobinsonTriangle::from_base(left, right, tile_type, false),
     ])
 }
 
@@ -85,8 +80,8 @@ pub fn pizza() -> Seed {
 pub fn get_all_seeds() -> [Seed; 4] {
     [
         rose(),
-        rhombus(TileType::LargeRhombus),
-        rhombus(TileType::SmallRhombus),
+        tile(TileType::LargeRhombus),
+        tile(TileType::SmallRhombus),
         pizza(),
     ]
 }
