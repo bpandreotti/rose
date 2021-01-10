@@ -15,14 +15,14 @@ pub fn get_svg(
     stroke_color: &str,
     first_arc_color: &str,
     second_arc_color: &str,
-    stroke_width: u8,
+    stroke_width: f64,
     draw_triangles: bool,
     draw_arcs: bool,
 ) -> String {
     let svg_cfg = SvgConfig {
         view_box_width: 1000,
         view_box_height: 1000,
-        stroke_width: stroke_width as u64,
+        stroke_width,
         stroke_color,
         quad_colors: (first_quad_color, second_quad_color),
         arc_colors: if draw_arcs {

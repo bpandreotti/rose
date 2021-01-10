@@ -99,7 +99,7 @@ impl SvgPolygon for Quadrilateral {
 pub struct SvgConfig<'a> {
     pub view_box_width: u64,
     pub view_box_height: u64,
-    pub stroke_width: u64,
+    pub stroke_width: f64,
     pub stroke_color: &'a str,
     pub quad_colors: (&'a str, &'a str),
     pub arc_colors: Option<(&'a str, &'a str)>,
@@ -120,7 +120,7 @@ impl<'a> SvgBuilder<'a> {
             config.view_box_width * SCALING_FACTOR,
             config.view_box_height * SCALING_FACTOR,
             config.stroke_color,
-            config.stroke_width * SCALING_FACTOR,
+            scale_float(config.stroke_width),
         );
         SvgBuilder { config, content }
     }

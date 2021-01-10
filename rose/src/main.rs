@@ -104,7 +104,7 @@ struct RoseArguments {
 
     /// Set the stroke width for the SVG, in SVG units
     #[structopt(long, default_value = "1")]
-    stroke_width: u64,
+    stroke_width: f64,
 
     /// Set which color scheme to use
     #[structopt(
