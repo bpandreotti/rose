@@ -31,7 +31,7 @@ macro_rules! assert_close {
 pub trait Transform: Sized {
     /// Rotate the object aroud the origin by a ginve angle, in degrees.
     fn rotate(&self, angle: f64) -> Self;
-    
+
     /// Mirror the object across the x axis
     fn mirror_x(&self) -> Self;
 
@@ -155,34 +155,51 @@ impl Line {
 }
 
 #[derive(Debug, PartialEq, Copy, Clone)]
-pub enum RobinsonTriangleType {
-    Small,
-    Large,
+pub enum TileType {
+    SmallRhombus,
+    LargeRhombus,
+    Kite,
+    Dart,
+}
+
+impl TileType {
+    pub fn base_to_side_ratio(self) -> f64 {
+        match self {
+            TileType::SmallRhombus => PHI_INVERSE,
+            TileType::LargeRhombus => PHI,
+            // For the Kite and Dart tiles, we consider the ratio of the base to the largest side
+            TileType::Kite => 1.0,
+            TileType::Dart => PHI_INVERSE,
+        }
+    }
 }
 
 #[derive(Clone)]
 pub struct RobinsonTriangle {
-    pub triangle_type: RobinsonTriangleType,
+    pub triangle_type: TileType,
     pub a: Point,
     pub b: Point,
     pub c: Point,
 }
 
 impl RobinsonTriangle {
-    fn infer_triangle_type(a: Point, b: Point, c: Point) -> RobinsonTriangleType {
+    fn infer_triangle_type(a: Point, b: Point, c: Point) -> TileType {
         let (ab, bc, ca) = (
             Line(a, b).length(),
             Line(b, c).length(),
             Line(c, a).length(),
         );
-        // Check that it is an isosceles triangle
-        assert_close!(ab, bc);
+        let ratio = ca / ab;
 
-        // Check that the sides are in a valid ratio and infer the triangle type from it
-        if close(ca / ab, PHI) {
-            RobinsonTriangleType::Large
-        } else if close(ca / ab, PHI_INVERSE) {
-            RobinsonTriangleType::Small
+        // For the rhombus triangles, we must make sure that the triangle is isoceles
+        if close(ab, bc) && close(ratio, TileType::LargeRhombus.base_to_side_ratio()) {
+            TileType::LargeRhombus
+        } else if close(ab, bc) && close(ratio, TileType::SmallRhombus.base_to_side_ratio()) {
+            TileType::SmallRhombus
+        } else if close(ratio, TileType::Kite.base_to_side_ratio()) {
+            TileType::Kite
+        } else if close(ratio, TileType::Dart.base_to_side_ratio()) {
+            TileType::Dart
         } else {
             panic!("Triangle sides are of invalid ratio")
         }
@@ -193,36 +210,32 @@ impl RobinsonTriangle {
         RobinsonTriangle { triangle_type, a, b, c }
     }
 
-    pub fn from_base(
-        a: Point,
-        c: Point,
-        triangle_type: RobinsonTriangleType,
-        right_handed: bool,
-    ) -> Self {
-        let ratio = match triangle_type {
-            RobinsonTriangleType::Small => PHI,
-            RobinsonTriangleType::Large => PHI_INVERSE,
-        };
-        let median = (a + c) / 2.0;
-        // Normalized direction vector from the median point to b
-        let direction_to_b = {
-            // If the triangle is right-handed -- that is, if the a to b to c path makes a right
-            // turn -- the direction to b from the base median is the direction from a to c turned
-            // 90 degrees anti-clockwise. Of course, if the triangle is left-handed, it's the
-            // opposite.
-            let d = (c - a).rotate(-90.0).normalized();
-            if right_handed { d } else { -d }
-        };
-        // Height of the resulting triangle
-        let height = {
-            let base_length = Line(a, c).length();
-            let hypotenuse = base_length * ratio;
-            (hypotenuse.powi(2) - (base_length / 2.0).powi(2)).sqrt()
-        };
-        let b = median + height * direction_to_b;
+    pub fn from_base(a: Point, c: Point, triangle_type: TileType, right_handed: bool) -> Self {
+        let rotation = {
+            // The angle at the a vertex
+            let a_angle = match triangle_type {
+                TileType::SmallRhombus => 72.0,
+                _ => 36.0,
+            };
 
-        // Just to make sure
-        assert_eq!(triangle_type, RobinsonTriangle::infer_triangle_type(a, b, c));
+            // If the triangle is right-handed -- that is, if the a to b to c path makes a right
+            // turn in SVG coordinates -- the direction from a to b is the direction from a to c
+            // rotated anti-clockwise. Of course, if the triangle is left-handed, it's the opposite.
+            if right_handed {
+                -a_angle
+            } else {
+                a_angle
+            }
+        };
+
+        // Normalized direction vector from a to b
+        let direction_to_b = (c - a).rotate(rotation).normalized();
+        
+        // The length of ab is simply the base length divided by the base to side ratio, since in
+        // Kite and Dart triangles the largest side is ab
+        let ab_length = Line(a, c).length() / triangle_type.base_to_side_ratio();
+        let b = a + ab_length * direction_to_b;
+
         RobinsonTriangle { triangle_type, a, b, c }
     }
 
@@ -340,16 +353,40 @@ mod tests {
         for _ in 0..10_000 {
             let a = random_point(&mut rng, -1000.0, 1000.0);
             let c = random_point(&mut rng, -1000.0, 1000.0);
-            use RobinsonTriangleType::*;
-            let triangles = [
-                RobinsonTriangle::from_base(a, c, Small, false),
-                RobinsonTriangle::from_base(a, c, Large, false),
-                RobinsonTriangle::from_base(a, c, Small, true),
-                RobinsonTriangle::from_base(a, c, Large, true),
-            ];
-            for t in &triangles {
-                run_transform_tests(t, &mut rng);
+            use TileType::*;
+            let types = [SmallRhombus, LargeRhombus, Kite, Dart];
+            for &triangle_type in &types {
+                run_transform_tests(
+                    &RobinsonTriangle::from_base(a, c, triangle_type, false),
+                    &mut rng,
+                );
+                run_transform_tests(
+                    &RobinsonTriangle::from_base(a, c, triangle_type, true),
+                    &mut rng,
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_triangle_from_base() {
+        let mut rng = rand::thread_rng();
+        for _ in 0..10_000 {
+            let a = random_point(&mut rng, -1000.0, 1000.0);
+            let c = random_point(&mut rng, -1000.0, 1000.0);
+            use TileType::*;
+            let types = [SmallRhombus, LargeRhombus, Kite, Dart];
+            for &triangle_type in &types {
+                assert_eq!(
+                    RobinsonTriangle::from_base(a, c, triangle_type, false).triangle_type,
+                    triangle_type
+                );
+                assert_eq!(
+                    RobinsonTriangle::from_base(a, c, triangle_type, true).triangle_type,
+                    triangle_type
+                );
             }
         }
     }
 }
+

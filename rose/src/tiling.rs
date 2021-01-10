@@ -111,7 +111,7 @@ pub fn merge_pairs_hashing(triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilatera
 fn decompose(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
     let RobinsonTriangle { triangle_type, a, b, c } = rt;
     match triangle_type {
-        RobinsonTriangleType::Small => {
+        TileType::SmallRhombus => {
             // The small triangle will be divided in two: a small DCA triangle and a large CDB
             // triangle.
             //        B
@@ -129,7 +129,7 @@ fn decompose(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
                 RobinsonTriangle::new(c, d, b),
             ]
         }
-        RobinsonTriangleType::Large => {
+        TileType::LargeRhombus => {
             // The large triangle will be divided in three: two large EDA and CEB triangles, and a
             // small DEB triangle.
             //     A
@@ -157,6 +157,7 @@ fn decompose(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
                 RobinsonTriangle::new(d, e, b),
             ]
         }
+        _ => todo!(),
     }
 }
 
@@ -174,9 +175,9 @@ mod tests {
                 let p = random_point(&mut rng, -1000.0, 1000.0);
                 let q = random_point(&mut rng, -1000.0, 1000.0);
                 let triangle_type = if rng.gen() {
-                    RobinsonTriangleType::Large
+                    TileType::LargeRhombus
                 } else {
-                    RobinsonTriangleType::Small
+                    TileType::SmallRhombus
                 };
                 vec![
                     RobinsonTriangle::from_base(p, q, triangle_type, true),
@@ -232,9 +233,9 @@ mod tests {
         // Create two rhombuses, a small one centered at x=1000, and a large one next to it,
         // centered at x=4000. They are scaled appropriately.
         let seed = {
-            let mut small = crate::seeds::rhombus(RobinsonTriangleType::Small)
+            let mut small = crate::seeds::rhombus(TileType::SmallRhombus)
                 .transform(Point(1000.0, 2000.0), 1000.0);
-            let large = crate::seeds::rhombus(RobinsonTriangleType::Large)
+            let large = crate::seeds::rhombus(TileType::LargeRhombus)
                 .transform(Point(4000.0, 2000.0), 1000.0);
             small.extend(large);
             small
@@ -257,16 +258,17 @@ mod tests {
             .flat_map(|t| {
                 let RobinsonTriangle { triangle_type, a, b, c } = t;
                 match triangle_type {
-                    RobinsonTriangleType::Small => vec![
+                    TileType::SmallRhombus => vec![
                         (EdgeType::Type1, Line(b, a)),
                         (EdgeType::Type2, Line(b, c)),
                         (EdgeType::SmallBase, Line(a, c)),
                     ],
-                    RobinsonTriangleType::Large => vec![
+                    TileType::LargeRhombus => vec![
                         (EdgeType::Type1, Line(a, b)),
                         (EdgeType::Type2, Line(b, c)),
                         (EdgeType::LargeBase, Line(a, c)),
                     ],
+                    _ => todo!(),
                 }
             })
             .collect();

@@ -15,13 +15,13 @@ fn scale_float(x: f64) -> i64 {
 }
 
 pub trait SvgPolygon {
-    fn polygon_type(&self) -> RobinsonTriangleType;
+    fn polygon_type(&self) -> TileType;
     fn write_points(&self, builder: &mut SvgBuilder) -> std::fmt::Result;
     fn arcs(&self) -> (Arc, Arc);
 }
 
 impl SvgPolygon for RobinsonTriangle {
-    fn polygon_type(&self) -> RobinsonTriangleType {
+    fn polygon_type(&self) -> TileType {
         self.triangle_type
     }
 
@@ -40,8 +40,9 @@ impl SvgPolygon for RobinsonTriangle {
 
     fn arcs(&self) -> (Arc, Arc) {
         let ratio = match self.triangle_type {
-            RobinsonTriangleType::Small => PHI,
-            RobinsonTriangleType::Large => PHI_INVERSE,
+            TileType::SmallRhombus => PHI,
+            TileType::LargeRhombus => PHI_INVERSE,
+            _ => todo!(),
         };
         let first_arc = (
             Line(self.a, self.b).median(),
@@ -58,11 +59,11 @@ impl SvgPolygon for RobinsonTriangle {
 }
 
 impl SvgPolygon for Quadrilateral {
-    fn polygon_type(&self) -> RobinsonTriangleType {
+    fn polygon_type(&self) -> TileType {
         if Line(self.a, self.c).length() > Line(self.b, self.d).length() {
-            RobinsonTriangleType::Large
+            TileType::LargeRhombus
         } else {
-            RobinsonTriangleType::Small
+            TileType::SmallRhombus
         }
     }
 
@@ -150,8 +151,8 @@ impl<'a> SvgBuilder<'a> {
                 writeln!(self.content, "    </g>")?;
             };
         }
-        add_polygon_group!(RobinsonTriangleType::Small, self.config.quad_colors.0);
-        add_polygon_group!(RobinsonTriangleType::Large, self.config.quad_colors.1);
+        add_polygon_group!(TileType::SmallRhombus, self.config.quad_colors.0);
+        add_polygon_group!(TileType::LargeRhombus, self.config.quad_colors.1);
 
         if let Some((color_1, color_2)) = self.config.arc_colors {
             let (arcs_1, arcs_2): (Vec<_>, Vec<_>) = polys.iter().map(SvgPolygon::arcs).unzip();
