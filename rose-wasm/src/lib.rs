@@ -1,5 +1,6 @@
 use geometry::Point;
 use rose::*;
+use config::*;
 use svg::{SvgBuilder, SvgConfig};
 use wasm_bindgen::prelude::*;
 
@@ -10,35 +11,26 @@ use wasm_bindgen::prelude::*;
 pub fn get_svg(
     num_generations: u8,
     seed: &str,
-    first_quad_color: &str,
-    second_quad_color: &str,
-    stroke_color: &str,
-    first_arc_color: &str,
-    second_arc_color: &str,
+    color_scheme: &str,
     stroke_width: f64,
     draw_triangles: bool,
     draw_arcs: bool,
 ) -> String {
+    let color_scheme = ColorScheme::from_arg(color_scheme.parse().unwrap());
     let svg_cfg = SvgConfig {
         view_box_width: 1000,
         view_box_height: 1000,
         stroke_width,
-        stroke_color,
-        quad_colors: (first_quad_color, second_quad_color),
+        stroke_color: color_scheme.stroke_color,
+        quad_colors: color_scheme.quad_colors,
         arc_colors: if draw_arcs {
-            Some((first_arc_color, second_arc_color))
+            Some(color_scheme.arc_colors)
         } else {
             None
         },
     };
 
-    let center = Point(500.0, 500.0);
-    let seed = match seed {
-        "rose" => seeds::rose().transform(center, 125.0),
-        "pizza" => seeds::pizza().transform(center, 250.0),
-        "rhombus" => seeds::tile(geometry::TileType::LargeRhombus).transform(center, 500.0),
-        _ => panic!(),
-    };
+    let seed = get_seed_from_arg(seed.parse().unwrap()).transform(Point(500.0, 500.0), 500.0);
 
     let triangles = tiling::generate_tiling(seed, num_generations as u64);
     let mut builder = SvgBuilder::new(svg_cfg);

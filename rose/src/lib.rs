@@ -1,3 +1,4 @@
+pub mod config;
 #[macro_use]
 pub mod geometry;
 pub mod seeds;
