@@ -2,12 +2,7 @@
 extern crate rand;
 extern crate structopt;
 
-mod config;
-#[macro_use]
-mod geometry;
-mod seeds;
-mod svg;
-mod tiling;
+use rose::*;
 
 use config::*;
 use geometry::*;
@@ -93,7 +88,7 @@ fn main() -> std::io::Result<()> {
         view_box_width: args.view_box_width,
         view_box_height: args.view_box_height,
         stroke_width: args.stroke_width,
-        
+
         // If the user didn't provide new stroke, quad or arc colors, we default to the color
         // scheme's colors
         stroke_color: args.stroke_color.as_deref().unwrap_or(scheme.stroke_color),
@@ -122,12 +117,16 @@ fn main() -> std::io::Result<()> {
     let seed = get_seed_from_arg(args.seed).transform(center, scale);
     let triangles = tiling::generate_tiling(seed, args.num_generations);
     if args.draw_triangles {
-        builder.add_all_polygons(triangles).expect("Error writing to string");
+        builder
+            .add_all_polygons(triangles)
+            .expect("Error writing to string");
     } else {
         // If the user didn't pass the "--draw-triangles" flag, we must merge the triangles and add
         // the resulting rhombuses to the SVG
         let quads = tiling::merge_pairs_hashing(triangles);
-        builder.add_all_polygons(quads).expect("Error writing to string");
+        builder
+            .add_all_polygons(quads)
+            .expect("Error writing to string");
     }
     let mut out_file = File::create(args.output_file)?;
     builder.build(&mut out_file)?;
