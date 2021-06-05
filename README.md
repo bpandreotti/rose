@@ -22,7 +22,7 @@ Use `-n <num-generations>` to control how many decomposition steps should be mad
 
 ### Seeds
 
-You can change the starting seed for the tiling with `--seed <seed>`. There are four available seeds: `rose`, `large-rhombus`, `small-rhombus` and `pizza`. This will change the shape of the Penrose tiling.
+You can change the starting seed for the tiling with `--seed <seed>`. There are 6 available seeds: `rose`, `pizza`, `large-rhombus`, `small-rhombus`, `kite` and `dart`. This will change the shape of the Penrose tiling. The first four seed use the rhombus (P3) tiles, while the `kite` and `dart` seeds use the kite and dart (P2) tiles.
 
 ### Appearance
 
@@ -35,3 +35,7 @@ You can also use the `--colors` and `--stroke-color` options to create your own 
 ### Show arcs and triangles
 
 You can use the `--draw-triangles` flag to skip the triangle merging step and render the Robinson triangles used to generate the tiling. The `--draw-arcs` flag will render colored arcs to show the tile matching rules.
+
+## Building and running the WebAssembly demo
+
+To build the WebAssembly version, you will need to have `wasm-pack` and `npm` installed in your system. First, `cd` into the `rose-wasm` directory and run `wasm-pack build --release`. Then, go the the `web` directory and run `npm install`. Finally, you can either serve the website with `npm run serve`, or build it in the `dist` folder with `npm run build`.
