@@ -1,6 +1,6 @@
 [package]
 name = "rose"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Bruno Andreotti <bandreotti@protonmail.com>"]
 description = "A Penrose tiling generator"
 license = "MIT"
