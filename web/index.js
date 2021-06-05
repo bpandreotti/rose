@@ -9,7 +9,7 @@ const generate = () => {
     let stroke_width = +document.getElementById("input-stroke-width").value;
     let draw_triangles = !!document.getElementById("input-draw-triangles").checked;
     let draw_arcs = !!document.getElementById("input-draw-arcs").checked;
-    
+
     let svg = wasm.get_svg(
         num_generations,
         seed,
@@ -26,13 +26,16 @@ const generate = () => {
 
 document.getElementById("button-generate").onclick = generate;
 
-let scale = 1.0;
+let scale = 5.0;
+const set_scale = (scale) => {
+    svg_container.children[0].style.transform = `scale(${scale})`;
+};
 const zoom = (event) => {
     event.preventDefault();
-    const zoom_sensitivity = 0.04;
-    scale += event.deltaY * -zoom_sensitivity * (scale - 0.3);
-    scale = Math.min(Math.max(1.0, scale), 16.0);
-    svg_container.children[0].style.transform = `scale(${scale})`;
+    const zoom_sensitivity = 0.002;
+    scale += event.deltaY * -zoom_sensitivity * scale;
+    scale = Math.min(Math.max(1.0, scale), 300.0);
+    set_scale(scale);
 };
 
 svg_container.onwheel = zoom;

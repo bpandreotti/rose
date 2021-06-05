@@ -1,6 +1,6 @@
+use config::*;
 use geometry::Point;
 use rose::*;
-use config::*;
 use svg::{SvgBuilder, SvgConfig};
 use wasm_bindgen::prelude::*;
 
@@ -30,7 +30,7 @@ pub fn get_svg(
         },
     };
 
-    let seed = get_seed_from_arg(seed.parse().unwrap()).transform(Point(500.0, 500.0), 500.0);
+    let seed = get_seed_from_arg(seed.parse().unwrap()).transform(Point(500.0, 500.0), 100.0);
 
     let triangles = tiling::generate_tiling(seed, num_generations as u64);
     let mut builder = SvgBuilder::new(svg_cfg);
