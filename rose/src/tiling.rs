@@ -218,7 +218,7 @@ mod tests {
             .flat_map(|_| {
                 let p = random_point(&mut rng, -1000.0, 1000.0);
                 let q = random_point(&mut rng, -1000.0, 1000.0);
-                let triangle_type = match rng.gen_range(0, 4) {
+                let triangle_type = match rng.gen_range(0..4) {
                     0 => TileType::SmallRhombus,
                     1 => TileType::LargeRhombus,
                     2 => TileType::Kite,

@@ -16,4 +16,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rose = { path = "../rose" }
-wasm-bindgen = "0.2"
+wasm-bindgen = "0.2.74"

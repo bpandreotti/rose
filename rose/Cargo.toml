@@ -8,7 +8,7 @@ repository = "https://github.com/bpandreotti/rose"
 edition = "2018"
 
 [dependencies]
-structopt = "0.3.19"
+structopt = "0.3.21"
 
 [dev-dependencies]
-rand = "0.7.3"
+rand = "0.8.3"

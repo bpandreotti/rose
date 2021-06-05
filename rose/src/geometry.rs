@@ -291,8 +291,8 @@ pub struct Quadrilateral {
 // Useful for tests
 #[cfg(test)]
 pub fn random_point<R: rand::Rng>(rng: &mut R, min: f64, max: f64) -> Point {
-    let x = rng.gen_range(min, max);
-    let y = rng.gen_range(min, max);
+    let x = rng.gen_range(min..max);
+    let y = rng.gen_range(min..max);
     Point(x, y)
 }
 
@@ -343,7 +343,7 @@ mod tests {
         assert_close!(obj.mirror_x().mirror_y(), obj.rotate(180.0));
         assert_close!(obj.rotate(0.0), obj.clone());
         assert_close!(obj.rotate(360.0), obj.clone());
-        let x = rng.gen_range(0.0, 360.0);
+        let x = rng.gen_range(0.0..360.0);
         assert_close!(obj.rotate(x).rotate(x), obj.rotate(2.0 * x));
         assert_close!(obj.rotate(x).rotate(-x), obj.clone());
     }
