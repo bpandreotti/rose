@@ -151,8 +151,16 @@ impl<'a> SvgBuilder<'a> {
                 writeln!(self.content, "    </g>")?;
             };
         }
-        add_polygon_group!(self.config.quad_colors.0, TileType::SmallRhombus, TileType::Dart);
-        add_polygon_group!(self.config.quad_colors.1, TileType::LargeRhombus, TileType::Kite);
+        add_polygon_group!(
+            self.config.quad_colors.0,
+            TileType::SmallRhombus,
+            TileType::Dart
+        );
+        add_polygon_group!(
+            self.config.quad_colors.1,
+            TileType::LargeRhombus,
+            TileType::Kite
+        );
 
         if let Some((color_1, color_2)) = self.config.arc_colors {
             let (arcs_1, arcs_2): (Vec<_>, Vec<_>) = polys.iter().map(SvgPolygon::arcs).unzip();

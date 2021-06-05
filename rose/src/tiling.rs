@@ -38,7 +38,7 @@ pub fn merge_pairs(mut triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilateral> {
 }
 
 pub fn merge_pairs_hashing(triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilateral> {
-    // The basic idea of this algorithm is to use a hash map indexed by the triangles bases' 
+    // The basic idea of this algorithm is to use a hash map indexed by the triangles bases'
     // medians, and to iterate through the triangles vector inserting them into the map. If there is
     // already a triangle with that same hash, they have the same base median, and can be merged.
     // This would be O(n). Since the coordinates are stored as floating point numbers, we would have
@@ -66,9 +66,8 @@ pub fn merge_pairs_hashing(triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilatera
     // scale the points first, so that when we floor them to integers each bucket will be relatively
     // smaller, avoiding collisions. If we make the scaling factor too large, the buckets will be
     // too small, leading to more misses. This is a balancing act.
-    let round_point_to_bucket = |Point(x, y)| -> (i32, i32) {
-        ((x * scaling_factor) as i32, (y * scaling_factor) as i32)
-    };
+    let round_point_to_bucket =
+        |Point(x, y)| ((x * scaling_factor) as i32, (y * scaling_factor) as i32);
 
     // We insert the indices instead of the actual triangles to save memory.
     let mut map = HashMap::<(i32, i32), usize>::with_capacity(triangles.len());
@@ -103,13 +102,18 @@ pub fn merge_pairs_hashing(triangles: Vec<RobinsonTriangle>) -> Vec<Quadrilatera
     // it so triangles are generated with round integer coordinates, resulting in misses pretty
     // consistently. Still, they make up a small amount of the total triangles, so we don't need to
     // worry so much about optimizing this step.
-    let remaining = map.values().map(|i| triangles[*i].clone()).collect::<Vec<_>>();
+    let remaining: Vec<_> = map.values().map(|i| triangles[*i].clone()).collect();
     result.extend(merge_pairs(remaining));
     result
 }
 
 fn decompose(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
-    let RobinsonTriangle { triangle_type, a, b, c } = rt;
+    let RobinsonTriangle {
+        triangle_type,
+        a,
+        b,
+        c,
+    } = rt;
     match triangle_type {
         TileType::SmallRhombus => {
             // The small triangle will be divided in two: a small DCA triangle and a large CDB
@@ -189,7 +193,7 @@ fn decompose(rt: RobinsonTriangle) -> Vec<RobinsonTriangle> {
             //          _--'         /
             //      _--'            /
             // A _-'_______________/ C
-            // 
+            //
             // It can be shown that:
             //   the length of AD == (the length of AB) / phi
             let d = a + (b - a) / PHI;
@@ -252,7 +256,6 @@ mod tests {
         }
     }
 
-
     /// This tests many combinations of seeds, scales, and generations to make sure that
     /// `merge_pairs_hashing` will never result in a collision. This test can be pretty slow
     #[test]
@@ -260,7 +263,9 @@ mod tests {
         for seed in crate::seeds::get_all_seeds().iter() {
             for size in 1..5 {
                 let scale = size as f64 * 200.0;
-                let mut triangles = seed.clone().transform(Point(scale / 2.0, scale / 2.0), scale);
+                let mut triangles = seed
+                    .clone()
+                    .transform(Point(scale / 2.0, scale / 2.0), scale);
                 for _ in 0..8 {
                     triangles = triangles.into_iter().flat_map(decompose).collect();
                     merge_pairs_hashing(triangles.clone());
@@ -303,7 +308,12 @@ mod tests {
         let mut edges: Vec<(EdgeType, Line)> = triangles
             .into_iter()
             .flat_map(|t| {
-                let RobinsonTriangle { triangle_type, a, b, c } = t;
+                let RobinsonTriangle {
+                    triangle_type,
+                    a,
+                    b,
+                    c,
+                } = t;
                 match triangle_type {
                     TileType::SmallRhombus => vec![
                         (EdgeType::RhombusSide1, Line(b, a)),

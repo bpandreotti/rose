@@ -1,5 +1,5 @@
-use crate::seeds;
 use crate::geometry::TileType;
+use crate::seeds;
 
 /// Like `clap::arg_enum!`, but allows you to customize the name of the argument associated with
 /// each variant.
@@ -21,7 +21,7 @@ macro_rules! custom_arg_enum {
         }
 
         impl $enum_name {
-            $v fn variants() -> &'static [&'static str] { 
+            $v fn variants() -> &'static [&'static str] {
                 &[ $($variant_value),* ]
             }
             $v fn first() -> &'static str {

@@ -207,7 +207,12 @@ impl RobinsonTriangle {
 
     pub fn new(a: Point, b: Point, c: Point) -> Self {
         let triangle_type = RobinsonTriangle::infer_triangle_type(a, b, c);
-        RobinsonTriangle { triangle_type, a, b, c }
+        RobinsonTriangle {
+            triangle_type,
+            a,
+            b,
+            c,
+        }
     }
 
     pub fn from_base(a: Point, c: Point, triangle_type: TileType, right_handed: bool) -> Self {
@@ -230,13 +235,18 @@ impl RobinsonTriangle {
 
         // Normalized direction vector from a to b
         let direction_to_b = (c - a).rotate(rotation).normalized();
-        
+
         // The length of ab is simply the base length divided by the base to side ratio, since in
         // Kite and Dart triangles the largest side is ab
         let ab_length = Line(a, c).length() / triangle_type.base_to_side_ratio();
         let b = a + ab_length * direction_to_b;
 
-        RobinsonTriangle { triangle_type, a, b, c }
+        RobinsonTriangle {
+            triangle_type,
+            a,
+            b,
+            c,
+        }
     }
 
     /// Returns the median point of the triangle's base.
@@ -389,4 +399,3 @@ mod tests {
         }
     }
 }
-
